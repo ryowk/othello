@@ -1,0 +1,5 @@
+/Users/wakatsuki/GoogleDrive/othello/build/CMakeFiles/check.out.dir
+/Users/wakatsuki/GoogleDrive/othello/build/CMakeFiles/edit_cache.dir
+/Users/wakatsuki/GoogleDrive/othello/build/CMakeFiles/rebuild_cache.dir
+/Users/wakatsuki/GoogleDrive/othello/build/CMakeFiles/training.out.dir
+/Users/wakatsuki/GoogleDrive/othello/build/CMakeFiles/battle.out.dir
