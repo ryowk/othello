@@ -83,7 +83,7 @@ void Game::play() {
         // 結果を出力
         print(board);
         std::cout << "Current Status: " << win1 << " VS " << win2;
-        std::cout << " (" << std::fixed << std::setw(8) << static_cast<double>(100*win1) / (win1+win2+1) << "%)\n\n";
+        std::cout << " (" << std::fixed << std::setw(8) << static_cast<double>(100*win1) / std::max(1, (win1+win2)) << "%)\n\n";
     }
     std::cout << "Final Result: ";
     std::cout << win1 << " VS " << win2 << " (" << static_cast<double>(100*win1) / (win1 + win2) << "%)\n";
