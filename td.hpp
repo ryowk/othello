@@ -12,6 +12,7 @@ class TD : public Learner {
     std::string dirname;;
     bool isBattle;
     double epsilon;
+		int training_count;
 
     int board_old[64];
     Network *network;

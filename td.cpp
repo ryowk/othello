@@ -7,7 +7,7 @@
 #include "functions.hpp"
 
 TD::TD(int b[64], int pID, std::string dn, bool isB)
-    : Learner(b, pID), dirname(dn), isBattle(isB) {
+    : Learner(b, pID), dirname(dn), isBattle(isB), training_count(0) {
     read();
 }
 
@@ -56,6 +56,7 @@ void TD::write() const {
     std::string fname_data = dirname + "coeff";
     std::ofstream File(fname_data, std::ios::out);
     network->write(File);
+		File << "Training Count: " << training_count;
 }
 
 bool TD::isMan() const { return false; }
@@ -156,6 +157,7 @@ void TD::train(int t, int pID) {
             reward = 0.5;
         network->train(bd_old, reward);
         network->train(bd, reward);
+				training_count++;
         return;
     }
 
