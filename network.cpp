@@ -15,15 +15,26 @@ Network::Network(const std::vector<int> &n, double lam, double alp, double lam2,
     b.resize(L);
     ew.resize(L);
     eb.resize(L);
-    gw.resize(L);
-    gb.resize(L);
+		// AdaDelta 用の変数たち
+		rw_ad.resize(L);
+		rw_ad.resize(L);
+		vw_ad.resize(L);
+		ve_ad.resize(L);
+		sw_ad.resize(L);
+		se_ad.resize(L);
+		gamma_ad = 0.95;
+		epsilon_ad = 1e-8;
     for (int i = 1; i < L; i++) {
         w[i].resize(N[i], N[i - 1]);
         b[i].resize(N[i]);
         ew[i].resize(N[i], N[i - 1]);
         eb[i].resize(N[i]);
-        gw[i].resize(N[i], N[i - 1]);
-        gb[i].resize(N[i]);
+        rw_ad[i].resize(N[i], N[i - 1]);
+        re_ad[i].resize(N[i]);
+        vw_ad[i].resize(N[i], N[i - 1]);
+        ve_ad[i].resize(N[i]);
+        sw_ad[i].resize(N[i], N[i - 1]);
+        se_ad[i].resize(N[i]);
     }
 }
 
@@ -113,37 +124,43 @@ void Network::train(const vector<int> &x, double y) {
 
 #if DEBUG
     // Gradient checking
-    const double eps2 = 1.0e-4;
+    const double eps = 1.0e-4;
     for (int i = 1; i < L; i++) {
         for (size_t j = 0; j < w[i].size1(); j++) {
             for (size_t k = 0; k < w[i].size2(); k++) {
-                w[i](j, k) += eps2;
-                double val1 = (getValue(x) - est) / eps2;
+                w[i](j, k) += eps;
+                double val1 = (getValue(x) - est) / eps;
                 double val2 = ew[i](j, k);
                 double err = val1 - val2;
                 std::cout << val1 << " " << val2 << std::endl;
                 if (fabs(err) > 1.0e-4) std::cout << "WARNING:";
                 std::cout << "ERROR: " << err << std::endl;
-                w[i](j, k) -= eps2;
+                w[i](j, k) -= eps;
             }
         }
         for (int j = 0; j < b[i].size(); j++) {
-            b[i](j) += eps2;
-            double val1 = (getValue(x) - est) / eps2;
+            b[i](j) += eps;
+            double val1 = (getValue(x) - est) / eps;
             double val2 = eb[i](j);
             double err = val1 - val2;
             std::cout << val1 << " " << val2 << std::endl;
             if (fabs(err) > 1.0e-4) std::cout << "WARNING:";
             std::cout << "ERROR: " << err << std::endl;
-            b[i](j) -= eps2;
+            b[i](j) -= eps;
         }
     }
 #endif
 
-    const double eps = 1.0e-8;
-    // AdaGrad
+    // AdaDelta
     // この書き方は遅いかもしれない
-    for (int i = 1; i < L; i++) {
+
+		// r_ad = gamma_ad * r_ad + (1 - gamma_ad) * g * g;
+		// v = sqrt(s + epsilon_ad) / sqrt(r_ad + epsilon_ad) * g
+		// s = gamma_ad + (1 - gamma_ad) * v * v;
+		// w = w - v
+
+
+for (int i = 1; i < L; i++) {
         for (size_t j = 0; j < w[i].size1(); j++) {
             for (size_t k = 0; k < w[i].size2(); k++) {
                 double diff = delta * ew[i](j, k) - lambda_2 * w[i](j, k);
