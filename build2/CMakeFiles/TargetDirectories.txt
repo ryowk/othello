@@ -1,0 +1,3 @@
+/Users/wakatsuki/GoogleDrive/othello/build2/CMakeFiles/edit_cache.dir
+/Users/wakatsuki/GoogleDrive/othello/build2/CMakeFiles/rebuild_cache.dir
+/Users/wakatsuki/GoogleDrive/othello/build2/CMakeFiles/a.out.dir

@@ -18,7 +18,8 @@ int AlphaBeta::getPos() const {
     int depth = 0;
     int eval_max;
     // 反復深化
-    do {
+depth = 4;
+//    do {
         eval_max = -1000000000;
         depth++;
         std::vector<int> vpos;
@@ -38,7 +39,7 @@ int AlphaBeta::getPos() const {
         clock_t ct2 = clock();
         time = static_cast<double>(ct2 - ct1) / CLOCKS_PER_SEC;
         // 深さを1増やすと2倍以上時間がかかると考えられるので早めに切り上げる
-    } while (time < time_limit / 2.0 && eval_max < h_win);
+//    } while (time < time_limit / 2.0 && eval_max < h_win);
     return pos_opt;
 }
 

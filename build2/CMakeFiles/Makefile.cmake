@@ -45,7 +45,5 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "CMakeFiles/check.out.dir/DependInfo.cmake"
-  "CMakeFiles/training.out.dir/DependInfo.cmake"
-  "CMakeFiles/battle.out.dir/DependInfo.cmake"
+  "CMakeFiles/a.out.dir/DependInfo.cmake"
   )
