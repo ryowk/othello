@@ -39,7 +39,7 @@ class Network {
     double sigmoid(double x) const;
     double dsigmoid(double x) const;
 public:
-    Network(const std::vector<int> &n, double alp, double lam, double lam2, bool drop = true);
+    Network(const std::vector<int> &n, double lam, double alp, double lam2, bool drop = true);
     void unset_et();
     double getValue(const vector<int> &x) const;
     void train(const vector<int> &x, double y);

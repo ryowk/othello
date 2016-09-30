@@ -118,16 +118,22 @@ void Network::train(const vector<int> &x, double y) {
         for (size_t j = 0; j < w[i].size1(); j++) {
             for (size_t k = 0; k < w[i].size2(); k++) {
                 w[i](j, k) += eps2;
-                double err = (getValue(x) - est) / eps2 - ew[i](j, k);
-                if (fabs(err) > 1.0e-4) std::cout << "WARNING: ";
+                double val1 = (getValue(x) - est) / eps2;
+                double val2 = ew[i](j, k);
+                double err = val1 - val2;
+                std::cout << val1 << " " << val2 << std::endl;
+                if (fabs(err) > 1.0e-4) std::cout << "WARNING:";
                 std::cout << "ERROR: " << err << std::endl;
                 w[i](j, k) -= eps2;
             }
         }
         for (int j = 0; j < b[i].size(); j++) {
             b[i](j) += eps2;
-            double err = (getValue(x) - est) / eps2 - eb[i](j);
-            if (fabs(err) > 1.0e-4) std::cout << "WARNING: ";
+            double val1 = (getValue(x) - est) / eps2;
+            double val2 = eb[i](j);
+            double err = val1 - val2;
+            std::cout << val1 << " " << val2 << std::endl;
+            if (fabs(err) > 1.0e-4) std::cout << "WARNING:";
             std::cout << "ERROR: " << err << std::endl;
             b[i](j) -= eps2;
         }
@@ -239,37 +245,39 @@ void Network::init(){
     }
 }
 
-
 /*
 // テスト
 int main() {
     std::ofstream File("log");
 
     std::vector<int> N;
-    N.push_back(20);
-    N.push_back(20);
+    N.push_back(200);
+    N.push_back(100);
     N.push_back(1);
-    Network *network = new Network(N, 0.1, 0.0, 0.0001, true);
+    Network *network = new Network(N, 0.0, 0.01, 1e-05, false);
+    network->init();
 
-    vector<int> v(20);
+    vector<int> v(200);
 
-    for (int i = 0; i < 200000; i++) {
+    for (int i = 0; i < 500000; i++) {
         v.clear();
-        for (int j = 0; j < 20; j++) v(j) = rand() % 2;
+        for (int j = 0; j < 200; j++) v(j) = rand() % 2;
         double goal = 0.0;
-        for (int j = 0; j < 20; j++) goal += v(j);
+        for (int j = 0; j < 200; j++) goal += v(j);
         goal = (tanh(goal - 10.0) + 1.0) / 2.0;
         network->train(v, goal);
 
-        if (i % 10 == 0) {
-            v.clear();
-            for (int j = 0; j < 20; j++) v(j) = rand() % 2;
-            goal = 0.0;
-            for (int j = 0; j < 20; j++) goal += v(j);
-            goal = (tanh(goal - 10.0) + 1.0) / 2.0;
-            File << goal - network->getValue(v) << std::endl;
-        }
+//        if (i % 10 == 0) {
+//            v.clear();
+//            for (int j = 0; j < 20; j++) v(j) = rand() % 2;
+//            goal = 0.0;
+//            for (int j = 0; j < 20; j++) goal += v(j);
+//            goal = (tanh(goal - 10.0) + 1.0) / 2.0;
+//            File << goal - network->getValue(v) << std::endl;
+//        }
     }
+
+    network->write(File);
 
     delete network;
 }
