@@ -34,11 +34,11 @@ void TD::read() {
     }
 
 
-    double lambda, alpha, lambda2;
+    double lambda, lambda2;
     bool dropout;
-    file_para >> epsilon >> lambda >> alpha >> lambda2 >> dropout;
+    file_para >> epsilon >> lambda >> lambda2 >> dropout;
 
-    network = new Network(N, lambda, alpha, lambda2, dropout);
+    network = new Network(N, lambda, lambda2, dropout);
 
     // 学習済みデータを読み込み
     std::string fname_data = dirname + "coeff";

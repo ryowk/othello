@@ -20,14 +20,15 @@ class Network {
     // eligibility trace
     std::vector< matrix<double> > ew;
     std::vector< vector<double> > eb;
-    // AdaGrad 用
-    std::vector< matrix<double> > gw;
-    std::vector< vector<double> > gb;
+    // AdaDelta 用
+    std::vector< matrix<double> > rw_ad;
+    std::vector< vector<double> > rb_ad;
+    std::vector< matrix<double> > sw_ad;
+    std::vector< vector<double> > sb_ad;
+    double rho, epsilon;
 
     // TD(lambda)
     double lambda;
-    // speed of gradient descent
-    double alpha;
     // degree of L2 regularization
     double lambda_2;
 
@@ -39,7 +40,7 @@ class Network {
     double sigmoid(double x) const;
     double dsigmoid(double x) const;
 public:
-    Network(const std::vector<int> &n, double lam, double alp, double lam2, bool drop = true);
+    Network(const std::vector<int> &n, double lam, double lam2, bool drop = true);
     void unset_et();
     double getValue(const vector<int> &x) const;
     void train(const vector<int> &x, double y);

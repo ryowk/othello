@@ -1,40 +1,39 @@
+#include "network.hpp"
 #include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <random>
 #include <vector>
-#include "network.hpp"
 
-Network::Network(const std::vector<int> &n, double lam, double alp, double lam2,
+Network::Network(const std::vector<int> &n, double lam, double lam2,
                  bool drop)
-    : L(n.size()), N(n), lambda(lam), alpha(alp), lambda_2(lam2), dropout(drop) {
-
+    : L(n.size()),
+      N(n),
+      lambda(lam),
+      lambda_2(lam2),
+      dropout(drop) {
     // w, b は層数よりも一つ少ないので、0番目は使わない
     w.resize(L);
     b.resize(L);
     ew.resize(L);
     eb.resize(L);
-		// AdaDelta 用の変数たち
-		rw_ad.resize(L);
-		rw_ad.resize(L);
-		vw_ad.resize(L);
-		ve_ad.resize(L);
-		sw_ad.resize(L);
-		se_ad.resize(L);
-		gamma_ad = 0.95;
-		epsilon_ad = 1e-8;
+    // AdaDelta 用の変数たち
+    rw_ad.resize(L);
+    rb_ad.resize(L);
+    sw_ad.resize(L);
+    sb_ad.resize(L);
+    rho = 0.95;
+    epsilon = 1e-6;
     for (int i = 1; i < L; i++) {
         w[i].resize(N[i], N[i - 1]);
         b[i].resize(N[i]);
         ew[i].resize(N[i], N[i - 1]);
         eb[i].resize(N[i]);
         rw_ad[i].resize(N[i], N[i - 1]);
-        re_ad[i].resize(N[i]);
-        vw_ad[i].resize(N[i], N[i - 1]);
-        ve_ad[i].resize(N[i]);
+        rb_ad[i].resize(N[i]);
         sw_ad[i].resize(N[i], N[i - 1]);
-        se_ad[i].resize(N[i]);
+        sb_ad[i].resize(N[i]);
     }
 }
 
@@ -110,13 +109,16 @@ void Network::train(const vector<int> &x, double y) {
     for (int i = L - 2; i > 0; i--) {
         vector<double> v(N[i]);
         v = prod(trans(w[i + 1]), d[i + 1]);
-        for (size_t j = 0; j < d[i].size(); j++) d[i](j) = dReLU(u[i](j)) * v(j);
+        for (size_t j = 0; j < d[i].size(); j++)
+            d[i](j) = dReLU(u[i](j)) * v(j);
         // Dropout mask
         if (dropout) {
             for (size_t j = 0; j < d[i].size(); j++) d[i](j) *= mask[i](j);
         }
     }
 
+    // これに delta をかければ TD(λ) での更新量（lambda = 0
+    // とすれば通常のニューラルネットワーク）
     for (int i = 1; i < L; i++) {
         ew[i] = lambda * ew[i] + outer_prod(d[i], z[i - 1]);
         eb[i] = lambda * eb[i] + d[i];
@@ -152,28 +154,32 @@ void Network::train(const vector<int> &x, double y) {
 #endif
 
     // AdaDelta
+    // r_ad = rho * r_ad + (1 - rho) * g * g;
+    // v = sqrt(s + epsilon) / sqrt(r_ad + epsilon) * g
+    // s = rho * s + (1 - rho) * v * v;
+    // w = w - v
     // この書き方は遅いかもしれない
-
-		// r_ad = gamma_ad * r_ad + (1 - gamma_ad) * g * g;
-		// v = sqrt(s + epsilon_ad) / sqrt(r_ad + epsilon_ad) * g
-		// s = gamma_ad + (1 - gamma_ad) * v * v;
-		// w = w - v
-
-
-for (int i = 1; i < L; i++) {
+    for (int i = 1; i < L; i++) {
         for (size_t j = 0; j < w[i].size1(); j++) {
             for (size_t k = 0; k < w[i].size2(); k++) {
-                double diff = delta * ew[i](j, k) - lambda_2 * w[i](j, k);
-                gw[i](j, k) += diff * diff;
-                w[i](j, k) += alpha * diff / sqrt(gw[i](j, k) + eps);
+                double grad = -(delta * ew[i](j, k) - lambda_2 * w[i](j, k));
+                rw_ad[i](j, k) =
+                    rho * rw_ad[i](j, k) + (1.0 - rho) * grad * grad;
+                double v = -sqrt(sw_ad[i](j, k) + epsilon) /
+                           sqrt(rw_ad[i](j, k) + epsilon) * grad;
+                sw_ad[i](j, k) = rho * sw_ad[i](j, k) + (1.0 - rho) * v * v;
+                w[i](j, k) += v;
             }
         }
 
         // バイアス項は正則化しない
         for (size_t j = 0; j < b[i].size(); j++) {
-            double diff = delta * eb[i](j);
-            gb[i](j) += diff * diff;
-            b[i](j) += alpha * diff / sqrt(gb[i](j) + eps);
+            double grad = -(delta * eb[i](j));
+            rb_ad[i](j) = rho * rb_ad[i](j) + (1.0 - rho) * grad * grad;
+            double v = -sqrt(sb_ad[i](j) + epsilon) /
+                       sqrt(rb_ad[i](j) + epsilon) * grad;
+            sb_ad[i](j) = rho * sb_ad[i](j) + (1.0 - rho) * v * v;
+            b[i](j) += v;
         }
     }
 }
@@ -204,14 +210,14 @@ double Network::getValue(const vector<int> &x) const {
 void Network::read(std::ifstream &File) {
     int l;
     File >> l;
-    if(L != l){
+    if (L != l) {
         std::cout << "ERROR: param and coeff are contradictory.\n";
         std::exit(0);
     }
-    for(int i=0; i<L; i++){
+    for (int i = 0; i < L; i++) {
         int n;
         File >> n;
-        if(N[i] != n){
+        if (N[i] != n) {
             std::cout << "ERROR: param and coeff are contradictory.\n";
             std::exit(0);
         }
@@ -231,7 +237,7 @@ void Network::read(std::ifstream &File) {
 
 void Network::write(std::ofstream &File) const {
     File << L << std::endl;
-    for(int i=0; i<L; i++) File << N[i] << " ";
+    for (int i = 0; i < L; i++) File << N[i] << " ";
     File << std::endl;
 
     for (int i = 0; i < L; i++) {
@@ -248,7 +254,7 @@ void Network::write(std::ofstream &File) const {
     }
 }
 
-void Network::init(){
+void Network::init() {
     // w は標準正規分布で初期化
     std::random_device seed_gen;
     std::mt19937 mt(seed_gen());
@@ -268,33 +274,32 @@ int main() {
     std::ofstream File("log");
 
     std::vector<int> N;
-    N.push_back(200);
-    N.push_back(100);
+    N.push_back(20);
+    N.push_back(20);
     N.push_back(1);
     Network *network = new Network(N, 0.0, 0.01, 1e-05, false);
     network->init();
 
-    vector<int> v(200);
+    vector<int> v(20);
 
-    for (int i = 0; i < 500000; i++) {
+    for (int i = 0; i < 10000; i++) {
         v.clear();
-        for (int j = 0; j < 200; j++) v(j) = rand() % 2;
+        for (int j = 0; j < 20; j++) v(j) = rand() % 2;
         double goal = 0.0;
-        for (int j = 0; j < 200; j++) goal += v(j);
+        for (int j = 0; j < 20; j++) goal += v(j);
         goal = (tanh(goal - 10.0) + 1.0) / 2.0;
         network->train(v, goal);
 
-//        if (i % 10 == 0) {
-//            v.clear();
-//            for (int j = 0; j < 20; j++) v(j) = rand() % 2;
-//            goal = 0.0;
-//            for (int j = 0; j < 20; j++) goal += v(j);
-//            goal = (tanh(goal - 10.0) + 1.0) / 2.0;
-//            File << goal - network->getValue(v) << std::endl;
-//        }
+        if (i % 10 == 0) {
+            v.clear();
+            for (int j = 0; j < 20; j++) v(j) = rand() % 2;
+            goal = 0.0;
+            for (int j = 0; j < 20; j++) goal += v(j);
+            goal = (tanh(goal - 10.0) + 1.0) / 2.0;
+            File << goal - network->getValue(v) << std::endl;
+        }
     }
-
-    network->write(File);
+    //    network->write(File);
 
     delete network;
 }
