@@ -41,28 +41,31 @@ void Trainer::oneplay() {
 }
 
 void Trainer::play() {
-    int win1 = 0;
-    int win2 = 0;
+//    int win1 = 0;
+//    int win2 = 0;
     for (int irn = 0; irn < round_number; irn++) {
         playerID = irn % 2;
         // 一回プレイ
         oneplay();
 
-        // 勝敗判定
-        int stones[2];
-        countStones(board, stones);
-        if (stones[0] > stones[1])
-            win1++;
-        else if (stones[0] < stones[1])
-            win2++;
-
+///////////////////////////////
+//        // 勝敗判定
+//        int stones[2];
+//        countStones(board, stones);
+//        if (stones[0] > stones[1])
+//            win1++;
+//        else if (stones[0] < stones[1])
+//            win2++;
+//
 //        // 結果を出力
 //        print(board);
 //        std::cout << "Round" << irn + 1 << "'s result: " << stones[0] << " VS " << stones[1] << std::endl;
 //        std::cout << "Current Status: " << win1 << " VS " << win2 << " (" << std::fixed << std::setw(8) << static_cast<double>(100*win1) / (win1+win2+1) << "%)" << std::endl;
 //        std::cout << std::endl;
-        std::cout << irn + 1 << "/" << round_number << std::endl;
-    }
+///////////////////////////////
+				std::cout << irn + 1 << "/" << round_number << std::endl;
 
+				if (irn % 100 == 0) learner->write();
+    }
     learner->write();
 }
