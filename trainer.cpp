@@ -1,7 +1,7 @@
-#include <fstream>
-#include <iostream>
-#include <iomanip>
 #include "trainer.hpp"
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 #include "functions.hpp"
 #include "td.hpp"
 
@@ -48,24 +48,31 @@ void Trainer::play() {
         // 一回プレイ
         oneplay();
 
-///////////////////////////////
-//        // 勝敗判定
-//        int stones[2];
-//        countStones(board, stones);
-//        if (stones[0] > stones[1])
-//            win1++;
-//        else if (stones[0] < stones[1])
-//            win2++;
-//
-//        // 結果を出力
-//        print(board);
-//        std::cout << "Round" << irn + 1 << "'s result: " << stones[0] << " VS " << stones[1] << std::endl;
-//        std::cout << "Current Status: " << win1 << " VS " << win2 << " (" << std::fixed << std::setw(8) << static_cast<double>(100*win1) / (win1+win2+1) << "%)" << std::endl;
-//        std::cout << std::endl;
-///////////////////////////////
-				std::cout << irn << "/" << round_number << std::endl;
+        ///////////////////////////////
+        //        // 勝敗判定
+        // int stones[2];
+        // countStones(board, stones);
+        // if (stones[0] > stones[1])
+        //    win1++;
+        // else if (stones[0] < stones[1])
+        //    win2++;
+        //
+        //        // 結果を出力
+        //        print(board);
+        // std::cout << "Round" << irn + 1 << "'s result: " << stones[0] << " VS
+        // "
+        //          << stones[1] << std::endl;
+        // std::cout << "Current Status: " << win1 << " VS " << win2 << " ("
+        //          << std::fixed << std::setw(8)
+        //          << static_cast<double>(100 * win1) / (win1 + win2 + 1) <<
+        //          "%)"
+        //          << std::endl;
+        // std::cout << std::endl;
+        ///////////////////////////////
 
-				if (irn % 1000 == 0) learner->write();
+        std::cout << irn << "/" << round_number << std::endl;
+
+        if (irn % 100 == 0) learner->write();
     }
     learner->write();
 }

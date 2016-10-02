@@ -28,11 +28,10 @@ void TD::read() {
         file_para >> temp;
         N.push_back(temp);
     }
-    if (L < 3 || N.front() !=128 || N.back() != 1) {
+    if (L < 3 || N.front() != 128 || N.back() != 1) {
         std::cout << "N should be 128 *,..., *, 1.\n";
         std::exit(0);
     }
-
 
     double lambda, lambda2;
     bool dropout;
@@ -56,7 +55,7 @@ void TD::write() const {
     std::string fname_data = dirname + "coeff";
     std::ofstream File(fname_data, std::ios::out);
     network->write(File);
-		File << "Training Count: " << training_count;
+    File << "Training Count: " << training_count;
 }
 
 bool TD::isMan() const { return false; }
@@ -70,31 +69,27 @@ int TD::getPos() const {
     std::vector<int> v;
     getPuttablePos(board, playerID, v);
 
-    int pos;
+    int pos_opt;
     // epsilon の確率でランダムな場所に置く
     if (drand(mt) < epsilon && !isBattle) {
-        pos = v[static_cast<int>(drand(mt) * v.size())];
+        pos_opt = v[static_cast<int>(drand(mt) * v.size())];
     } else {
         // 貪欲には、取りうる全ての action に対して state value を最大にする pos
         // を選ぶ
-        int pos_opt;
         double val_max = -1.0e128;
         for (size_t i = 0; i < v.size(); i++) {
-            pos = v[i];
+            int pos = v[i];
             int b[64];
             for (int i = 0; i < 64; i++) b[i] = board[i];
             putStone(b, playerID, pos);
-            vector<int> vec(128);
-            arr2vec(b, vec);
-            double val = network->getValue(vec);
+            double val = getValue(b);
             if (val > val_max) {
                 val_max = val;
                 pos_opt = pos;
             }
         }
-        pos = pos_opt;
     }
-    return pos;
+    return pos_opt;
 }
 
 int TD::getOpponentPos() const {
@@ -105,48 +100,41 @@ int TD::getOpponentPos() const {
     std::vector<int> v;
     getPuttablePos(board, 1 - playerID, v);
 
-    int pos;
-    if (drand(mt) < epsilon) {
-        pos = v[static_cast<int>(drand(mt) * v.size())];
+    int pos_opt;
+    if (drand(mt) < epsilon && !isBattle) {
+        pos_opt = v[static_cast<int>(drand(mt) * v.size())];
     } else {
-        int pos_opt;
         double val_min = 1.0e128;
         for (size_t i = 0; i < v.size(); i++) {
-            pos = v[i];
+            int pos = v[i];
             int b[64];
             for (int i = 0; i < 64; i++) b[i] = board[i];
             putStone(b, 1 - playerID, pos);
-            vector<int> vec(128);
-            arr2vec(b, vec);
-            double val = network->getValue(vec);
+            double val = getValue(b);
             if (val < val_min) {
                 val_min = val;
                 pos_opt = pos;
             }
         }
-        pos = pos_opt;
     }
-    return pos;
-}
-
-// 配列から boost のベクトルに変換する
-void TD::arr2vec(const int b[64], vector<int> &v) const {
-    v.clear();
-    for (int i = 0; i < 64; i++) {
-        if (b[i] == playerID)
-            v(2 * i) = 1;
-        else if (b[i] == 1 - playerID)
-            v(2 * i + 1) = 1;
-    }
+    return pos_opt;
 }
 
 void TD::train(int t, int pID) {
-    vector<int> bd(128), bd_old(128);
-    arr2vec(board, bd);
-    arr2vec(board_old, bd_old);
-
     // ゲーム終了なら勝敗に応じた reward を return とする
+
+    // 対称操作
+    // 逐次的に対称操作を施すので、全ての状態を得るため
+    // 1, x, y, x, opponent, x, y, x の順に変換を行う
+    static int (*symm_trans[8])(vector<int> &) = {
+        identity_trans, x_mirror, y_mirror, x_mirror,
+        player_trans,   x_mirror, y_mirror, x_mirror};
+
     if (isEnd(board)) {
+        vector<int> bd(128), bd_old(128);
+        arr2vec(board, bd);
+        arr2vec(board_old, bd_old);
+
         int winner = getWinner(board);
         double reward;
         if (winner == playerID)
@@ -155,9 +143,14 @@ void TD::train(int t, int pID) {
             reward = 0.0;
         else
             reward = 0.5;
-        network->train(bd_old, reward);
-        network->train(bd, reward);
-				training_count++;
+        for(int i=0; i<8; i++){
+            int parity = symm_trans[i](bd_old);
+            symm_trans[i](bd);
+            if(parity) reward = 1.0 - reward;
+            network->train(bd_old, reward, i);
+            network->train(bd, reward, i);
+        }
+        training_count++;
         return;
     }
 
@@ -172,8 +165,14 @@ void TD::train(int t, int pID) {
     }
 
     // TD(lambda)
-    double val = network->getValue(bd);
-    network->train(bd_old, val);
+    vector<int> bd_old(128);
+    arr2vec(board_old, bd_old);
+    double value = getValue(board);
+    for (int i = 0; i < 8; i++) {
+        int parity = symm_trans[i](bd_old);
+        if(parity) value = 1.0 - value;
+        network->train(bd_old, value, i);
+    }
 
     for (int i = 0; i < 64; i++) board_old[i] = board[i];
 }
@@ -182,4 +181,52 @@ double TD::getValue(const int b[64]) const {
     vector<int> bd(128);
     arr2vec(b, bd);
     return network->getValue(bd);
+}
+
+// 配列から boost のベクトルに変換する
+void TD::arr2vec(const int b[64], vector<int> &v) const {
+    v.clear();
+    for (int i = 0; i < 64; i++) {
+        if (b[i] == playerID)
+            v(2 * i) = 1;
+        else if (b[i] == 1 - playerID)
+            v(2 * i + 1) = 1;
+    }
+}
+
+// 対称操作たち
+// 自分なら0を返し、相手なら1を返す
+int TD::identity_trans(vector<int> &v) {return 0;}
+
+int TD::x_mirror(vector<int> &v) {
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            int pos1 = 8 * y + x;
+            int pos2 = 8 * y + (7 - x);
+            for (int i = 0; i < 2; i++) {
+                std::swap(v(2 * pos1 + i), v(2 * pos2 + i));
+            }
+        }
+    }
+    return 0;
+}
+
+int TD::y_mirror(vector<int> &v) {
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            int pos1 = 8 * y + x;
+            int pos2 = 8 * (7 - y) + x;
+            for (int i = 0; i < 2; i++) {
+                std::swap(v(2 * pos1 + i), v(2 * pos2 + i));
+            }
+        }
+    }
+    return 0;
+}
+
+int TD::player_trans(vector<int> &v) {
+    for (int i = 0; i < 64; i++) {
+        std::swap(v(2 * i), v(2 * i + 1));
+    }
+    return 1;
 }

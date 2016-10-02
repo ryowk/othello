@@ -8,6 +8,12 @@
 using namespace boost::numeric::ublas;
 using namespace boost::numeric;
 
+struct ET {
+    // eligibility trace
+    std::vector< matrix<double> > ew;
+    std::vector< vector<double> > eb;
+};
+
 class Network {
     // number of the layers
     int L;
@@ -17,9 +23,10 @@ class Network {
     // variational parameters
     std::vector< matrix<double> > w;
     std::vector< vector<double> > b;
-    // eligibility trace
-    std::vector< matrix<double> > ew;
-    std::vector< vector<double> > eb;
+    // Eligibility Trace 用
+    // 対称性の数だけ用意すると良い
+    std::vector< ET > et;
+
     // AdaDelta 用
     std::vector< matrix<double> > rw_ad;
     std::vector< vector<double> > rb_ad;
@@ -43,7 +50,7 @@ public:
     Network(const std::vector<int> &n, double lam, double lam2, bool drop = true);
     void unset_et();
     double getValue(const vector<int> &x) const;
-    void train(const vector<int> &x, double y);
+    void train(const vector<int> &x, double y, int et_id);
     void read(std::ifstream &File);
     void write(std::ofstream &File) const;
     void init();

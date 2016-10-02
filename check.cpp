@@ -30,7 +30,7 @@ int main(int argc, char *argv[]){
     // 石の差の出現数
     int stones_num[129] = {0};
 
-    const int samples = 10000;
+    const int samples = 100000;
 
     for (int i = 0; i < samples; i++) {
         for (int j = 0; j < 64; j++)
