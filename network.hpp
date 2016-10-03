@@ -8,12 +8,6 @@
 using namespace boost::numeric::ublas;
 using namespace boost::numeric;
 
-struct ET {
-    // eligibility trace
-    std::vector< matrix<double> > ew;
-    std::vector< vector<double> > eb;
-};
-
 class Network {
     // number of the layers
     int L;
@@ -21,18 +15,19 @@ class Network {
     std::vector<int> N;
 
     // variational parameters
-    std::vector< matrix<double> > w;
-    std::vector< vector<double> > b;
-    // Eligibility Trace 用
-    // 対称性の数だけ用意すると良い
-    std::vector< ET > et;
+    std::vector<matrix<double> > w;
+    std::vector<vector<double> > b;
 
     // AdaDelta 用
-    std::vector< matrix<double> > rw_ad;
-    std::vector< vector<double> > rb_ad;
-    std::vector< matrix<double> > sw_ad;
-    std::vector< vector<double> > sb_ad;
+    std::vector<matrix<double> > rw_ad;
+    std::vector<vector<double> > rb_ad;
+    std::vector<matrix<double> > sw_ad;
+    std::vector<vector<double> > sb_ad;
     double rho, epsilon;
+
+    // eligibility trace
+    std::vector<matrix<double> > ew;
+    std::vector<vector<double> > eb;
 
     // TD(lambda)
     double lambda;
@@ -46,11 +41,13 @@ class Network {
     double dReLU(double x) const;
     double sigmoid(double x) const;
     double dsigmoid(double x) const;
+
 public:
-    Network(const std::vector<int> &n, double lam, double lam2, bool drop = true);
+    Network(const std::vector<int> &n, double lam, double lam2,
+            bool drop = true);
     void unset_et();
     double getValue(const vector<int> &x) const;
-    void train(const vector<int> &x, double y, int et_id);
+    void train(const vector<int> &x, double y);
     void read(std::ifstream &File);
     void write(std::ofstream &File) const;
     void init();

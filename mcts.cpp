@@ -36,7 +36,7 @@ int MCTS::getPos() const {
     Node* root = new Node();
     // root の状態は MCTS の状態
     root->playerID = playerID;
-    for (int i = 0; i < 64; i++) root->board[i] = board[i];
+    memcpy(root->board, board, sizeof(root->board));
 
     // time_limit に達するまでサンプリングする
     int loop = 0;

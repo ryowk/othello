@@ -55,7 +55,7 @@ void TD::write() const {
     std::string fname_data = dirname + "coeff";
     std::ofstream File(fname_data, std::ios::out);
     network->write(File);
-    File << "Training Count: " << training_count;
+    File << "Training Count: " << training_count << std::endl;
 }
 
 bool TD::isMan() const { return false; }
@@ -80,7 +80,7 @@ int TD::getPos() const {
         for (size_t i = 0; i < v.size(); i++) {
             int pos = v[i];
             int b[64];
-            for (int i = 0; i < 64; i++) b[i] = board[i];
+            memcpy(b, board, sizeof(b));
             putStone(b, playerID, pos);
             double val = getValue(b);
             if (val > val_max) {
@@ -92,6 +92,10 @@ int TD::getPos() const {
     return pos_opt;
 }
 
+// 自己学習用
+// 相手は相手の value を最大化する手を選ぶ
+// 相手は自分の value を最小化する手を選ぶようにしても良いが
+// その場合は自分の方が有利になってしまう
 int TD::getOpponentPos() const {
     static std::random_device seed_gen;
     static std::mt19937 mt(seed_gen());
@@ -104,15 +108,16 @@ int TD::getOpponentPos() const {
     if (drand(mt) < epsilon && !isBattle) {
         pos_opt = v[static_cast<int>(drand(mt) * v.size())];
     } else {
-        double val_min = 1.0e128;
+        double val_max = -1.0e128;
         for (size_t i = 0; i < v.size(); i++) {
             int pos = v[i];
             int b[64];
-            for (int i = 0; i < 64; i++) b[i] = board[i];
+            memcpy(b, board, sizeof(b));
             putStone(b, 1 - playerID, pos);
-            double val = getValue(b);
-            if (val < val_min) {
-                val_min = val;
+
+            double val = getValue(b, 1 - playerID);
+            if (val > val_max) {
+                val_max = val;
                 pos_opt = pos;
             }
         }
@@ -122,13 +127,6 @@ int TD::getOpponentPos() const {
 
 void TD::train(int t, int pID) {
     // ゲーム終了なら勝敗に応じた reward を return とする
-
-    // 対称操作
-    // 逐次的に対称操作を施すので、全ての状態を得るため
-    // 1, x, y, x, opponent, x, y, x の順に変換を行う
-    static int (*symm_trans[8])(vector<int> &) = {
-        identity_trans, x_mirror, y_mirror, x_mirror,
-        player_trans,   x_mirror, y_mirror, x_mirror};
 
     if (isEnd(board)) {
         vector<int> bd(128), bd_old(128);
@@ -143,13 +141,8 @@ void TD::train(int t, int pID) {
             reward = 0.0;
         else
             reward = 0.5;
-        for(int i=0; i<8; i++){
-            int parity = symm_trans[i](bd_old);
-            symm_trans[i](bd);
-            if(parity) reward = 1.0 - reward;
-            network->train(bd_old, reward, i);
-            network->train(bd, reward, i);
-        }
+        network->train(bd_old, reward);
+        network->train(bd, reward);
         training_count++;
         return;
     }
@@ -159,7 +152,7 @@ void TD::train(int t, int pID) {
 
     // 初手なら更新しない
     if (t == 0 || t == 1) {
-        for (int i = 0; i < 64; i++) board_old[i] = board[i];
+        memcpy(board_old, board, sizeof(board_old));
         network->unset_et();
         return;
     }
@@ -168,18 +161,19 @@ void TD::train(int t, int pID) {
     vector<int> bd_old(128);
     arr2vec(board_old, bd_old);
     double value = getValue(board);
-    for (int i = 0; i < 8; i++) {
-        int parity = symm_trans[i](bd_old);
-        if(parity) value = 1.0 - value;
-        network->train(bd_old, value, i);
-    }
+    network->train(bd_old, value);
 
-    for (int i = 0; i < 64; i++) board_old[i] = board[i];
+    memcpy(board_old, board, sizeof(board_old));
 }
 
 double TD::getValue(const int b[64]) const {
     vector<int> bd(128);
     arr2vec(b, bd);
+    return network->getValue(bd);
+}
+double TD::getValue(const int b[64], int pID) const {
+    vector<int> bd(128);
+    arr2vec(b, bd, pID);
     return network->getValue(bd);
 }
 
@@ -193,40 +187,12 @@ void TD::arr2vec(const int b[64], vector<int> &v) const {
             v(2 * i + 1) = 1;
     }
 }
-
-// 対称操作たち
-// 自分なら0を返し、相手なら1を返す
-int TD::identity_trans(vector<int> &v) {return 0;}
-
-int TD::x_mirror(vector<int> &v) {
-    for (int y = 0; y < 8; y++) {
-        for (int x = 0; x < 8; x++) {
-            int pos1 = 8 * y + x;
-            int pos2 = 8 * y + (7 - x);
-            for (int i = 0; i < 2; i++) {
-                std::swap(v(2 * pos1 + i), v(2 * pos2 + i));
-            }
-        }
-    }
-    return 0;
-}
-
-int TD::y_mirror(vector<int> &v) {
-    for (int y = 0; y < 8; y++) {
-        for (int x = 0; x < 8; x++) {
-            int pos1 = 8 * y + x;
-            int pos2 = 8 * (7 - y) + x;
-            for (int i = 0; i < 2; i++) {
-                std::swap(v(2 * pos1 + i), v(2 * pos2 + i));
-            }
-        }
-    }
-    return 0;
-}
-
-int TD::player_trans(vector<int> &v) {
+void TD::arr2vec(const int b[64], vector<int> &v, int pID) const {
+    v.clear();
     for (int i = 0; i < 64; i++) {
-        std::swap(v(2 * i), v(2 * i + 1));
+        if (b[i] == pID)
+            v(2 * i) = 1;
+        else if (b[i] == 1 - pID)
+            v(2 * i + 1) = 1;
     }
-    return 1;
 }

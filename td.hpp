@@ -18,11 +18,7 @@ class TD : public Learner {
     Network *network;
     // private member functions
     void arr2vec(const int b[64], vector<int> &v) const;
-    // 対称操作たち
-    static int identity_trans(vector<int> &v);
-    static int x_mirror(vector<int> &v);
-    static int y_mirror(vector<int> &v);
-    static int player_trans(vector<int> &v);
+    void arr2vec(const int b[64], vector<int> &v, int pID) const;
 public:
     TD(int b[64], int pID, std::string dn, bool isB);
     ~TD();
@@ -33,4 +29,5 @@ public:
     void read();
     void write() const;
     double getValue(const int b[64]) const;
+    double getValue(const int b[64], int pID) const;
 };

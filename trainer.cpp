@@ -17,6 +17,7 @@ Trainer::~Trainer() { delete learner; }
 void Trainer::oneplay() {
     init(board);
     int turn = 0;
+
     while (1) {
         // 学習
         learner->train(turn, playerID);
@@ -59,12 +60,11 @@ void Trainer::play() {
         //
         //        // 結果を出力
         //        print(board);
-        // std::cout << "Round" << irn + 1 << "'s result: " << stones[0] << " VS
-        // "
+        // std::cout << "Round" << irn + 1 << "'s result: " << stones[0] << " VS "
         //          << stones[1] << std::endl;
         // std::cout << "Current Status: " << win1 << " VS " << win2 << " ("
         //          << std::fixed << std::setw(8)
-        //          << static_cast<double>(100 * win1) / (win1 + win2 + 1) <<
+        //          << static_cast<double>(100 * win1) / (win1 + win2) <<
         //          "%)"
         //          << std::endl;
         // std::cout << std::endl;

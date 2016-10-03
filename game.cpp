@@ -8,6 +8,7 @@
 #include "primitivemc.hpp"
 #include "mcts.hpp"
 #include "td.hpp"
+#include "man.hpp"
 
 Game::Game(std::ifstream &File) {
     File >> round_number >> time_limit;
@@ -30,6 +31,8 @@ Game::Game(std::ifstream &File) {
             std::string dirname;
             File >> dirname;
             player[i] = new TD(board, i, dirname, true);
+        } else if (str == "Man") {
+            player[i] = new Man(board, i);
         } else {
             std::cout << "PLAYER NAME ERROR" << std::endl;
             std::cout << "Aho is used." << std::endl;

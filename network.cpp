@@ -11,13 +11,8 @@ Network::Network(const std::vector<int> &n, double lam, double lam2, bool drop)
     // w, b は層数よりも一つ少ないので、0番目は使わない
     w.resize(L);
     b.resize(L);
-    // 対称性の数だけ作る
-    // 自分相手対称性(2)*ミラー対称性(4)のみ考慮する
-    et.resize(8);
-    for (int k = 0; k < et.size(); k++) {
-        et[k].ew.resize(L);
-        et[k].eb.resize(L);
-    }
+    ew.resize(L);
+    eb.resize(L);
     // AdaDelta 用の変数たち
     rw_ad.resize(L);
     rb_ad.resize(L);
@@ -28,10 +23,8 @@ Network::Network(const std::vector<int> &n, double lam, double lam2, bool drop)
     for (int i = 1; i < L; i++) {
         w[i].resize(N[i], N[i - 1]);
         b[i].resize(N[i]);
-        for (int k = 0; k < et.size(); k++) {
-            et[k].ew[i].resize(N[i], N[i - 1]);
-            et[k].eb[i].resize(N[i]);
-        }
+        ew[i].resize(N[i], N[i - 1]);
+        eb[i].resize(N[i]);
         rw_ad[i].resize(N[i], N[i - 1]);
         rb_ad[i].resize(N[i]);
         sw_ad[i].resize(N[i], N[i - 1]);
@@ -40,11 +33,9 @@ Network::Network(const std::vector<int> &n, double lam, double lam2, bool drop)
 }
 
 void Network::unset_et() {
-    for (int k = 0; k < et.size(); k++) {
-        for (int i = 1; i < L; i++) {
-            et[k].ew[i].clear();
-            et[k].eb[i].clear();
-        }
+    for (int i = 1; i < L; i++) {
+        ew[i].clear();
+        eb[i].clear();
     }
 }
 
@@ -58,7 +49,7 @@ inline double Network::dsigmoid(double x) const {
     return (1.0 - sigmoid(x)) * sigmoid(x);
 }
 
-void Network::train(const vector<int> &x, double y, int et_id) {
+void Network::train(const vector<int> &x, double y) {
     // Dropout mask
     static std::random_device seed_gen;
     static std::mt19937 mt(seed_gen());
@@ -124,8 +115,8 @@ void Network::train(const vector<int> &x, double y, int et_id) {
     // これに delta をかければ TD(λ) での更新量（lambda = 0
     // とすれば通常のニューラルネットワーク）
     for (int i = 1; i < L; i++) {
-        et[et_id].ew[i] = lambda * et[et_id].ew[i] + outer_prod(d[i], z[i - 1]);
-        et[et_id].eb[i] = lambda * et[et_id].eb[i] + d[i];
+        ew[i] = lambda * ew[i] + outer_prod(d[i], z[i - 1]);
+        eb[i] = lambda * eb[i] + d[i];
     }
 
 #if DEBUG
@@ -136,7 +127,7 @@ void Network::train(const vector<int> &x, double y, int et_id) {
             for (size_t k = 0; k < w[i].size2(); k++) {
                 w[i](j, k) += eps;
                 double val1 = (getValue(x) - est) / eps;
-                double val2 = et[et_id].ew[i](j, k);
+                double val2 = ew[i](j, k);
                 double err = val1 - val2;
                 std::cout << val1 << " " << val2 << std::endl;
                 if (fabs(err) > 1.0e-4) std::cout << "WARNING:";
@@ -144,10 +135,10 @@ void Network::train(const vector<int> &x, double y, int et_id) {
                 w[i](j, k) -= eps;
             }
         }
-        for (int j = 0; j < b[i].size(); j++) {
+        for (size_t j = 0; j < b[i].size(); j++) {
             b[i](j) += eps;
             double val1 = (getValue(x) - est) / eps;
-            double val2 = et[et_id].eb[i](j);
+            double val2 = eb[i](j);
             double err = val1 - val2;
             std::cout << val1 << " " << val2 << std::endl;
             if (fabs(err) > 1.0e-4) std::cout << "WARNING:";
@@ -166,8 +157,7 @@ void Network::train(const vector<int> &x, double y, int et_id) {
     for (int i = 1; i < L; i++) {
         for (size_t j = 0; j < w[i].size1(); j++) {
             for (size_t k = 0; k < w[i].size2(); k++) {
-                double grad =
-                    -(delta * et[et_id].ew[i](j, k) - lambda_2 * w[i](j, k));
+                double grad = -(delta * ew[i](j, k) - lambda_2 * w[i](j, k));
                 rw_ad[i](j, k) =
                     rho * rw_ad[i](j, k) + (1.0 - rho) * grad * grad;
                 double v = -sqrt(sw_ad[i](j, k) + epsilon) /
@@ -179,7 +169,7 @@ void Network::train(const vector<int> &x, double y, int et_id) {
 
         // バイアス項は正則化しない
         for (size_t j = 0; j < b[i].size(); j++) {
-            double grad = -(delta * et[et_id].eb[i](j));
+            double grad = -(delta * eb[i](j));
             rb_ad[i](j) = rho * rb_ad[i](j) + (1.0 - rho) * grad * grad;
             double v = -sqrt(sb_ad[i](j) + epsilon) /
                        sqrt(rb_ad[i](j) + epsilon) * grad;

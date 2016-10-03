@@ -3,7 +3,7 @@
 #include "constants.hpp"
 
 void init(int board[64]) {
-    for (int i = 0; i < 64; i++) board[i] = NOONE;
+    std::fill(board, board + 64, NOONE);
     board[8 * 3 + 3] = PLAYER1;
     board[8 * 3 + 4] = PLAYER2;
     board[8 * 4 + 4] = PLAYER1;
@@ -14,11 +14,11 @@ void print(const int board[64]) {
     char cboard[64];
     for (int i = 0; i < 64; i++) {
         if (board[i] == NOONE)
-            cboard[i] = '*';
+            cboard[i] = '-';
         else if (board[i] == PLAYER1)
-            cboard[i] = 'o';
+            cboard[i] = 'O';
         else
-            cboard[i] = 'x';
+            cboard[i] = 'X';
     }
 
     std::cout << " ";
