@@ -2,6 +2,7 @@
 #include <vector>
 
 void init(int board[64]);
+void init(int board[64], int pID);
 void print(const int board[64]);
 void getPuttablePos(const int board[64], int playerID, std::vector<int> &v);
 bool isPuttable(const int board[64], int playerID, int pos);

@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     // 石の差の出現数
     int stones_num[129] = {0};
 
-    const int samples = 1000;
+    const int samples = 10000;
 
     void (*trans[8])(int *) = {identity_trans, x_mirror, y_mirror, x_mirror,
                                player_trans,   x_mirror, y_mirror, x_mirror};

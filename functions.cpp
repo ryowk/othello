@@ -10,6 +10,14 @@ void init(int board[64]) {
     board[8 * 4 + 3] = PLAYER2;
 }
 
+void init(int board[64], int pID) {
+    std::fill(board, board + 64, NOONE);
+    board[8 * 3 + 3] = pID;
+    board[8 * 3 + 4] = 1 - pID;
+    board[8 * 4 + 4] = pID;
+    board[8 * 4 + 3] = 1 - pID;
+}
+
 void print(const int board[64]) {
     char cboard[64];
     for (int i = 0; i < 64; i++) {
