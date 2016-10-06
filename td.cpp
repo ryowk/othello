@@ -28,8 +28,16 @@ void TD::read() {
         file_para >> temp;
         N.push_back(temp);
     }
-    if (L < 3 || N.front() != SIZE2 || N.back() != 1) {
-        std::cout << "N should be SIZE2 *,..., *, 1.\n";
+    if (L < 3){
+        std::cout << "ERROR: L < 3\n";
+        std::exit(0);
+    }
+    if (N.front() != SIZE2){
+        std::cout << "ERROR: N != SIZE2\n";
+        std::exit(0);
+    }
+    if(N.back() != 1){
+        std::cout << "ERROR: N != 1\n";
         std::exit(0);
     }
 
