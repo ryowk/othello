@@ -1,14 +1,14 @@
-#include <fstream>
-#include <iostream>
-#include <iomanip>
 #include "game.hpp"
-#include "functions.hpp"
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 #include "aho.hpp"
 #include "alphabeta.hpp"
-#include "primitivemc.hpp"
-#include "mcts.hpp"
-#include "td.hpp"
+#include "functions.hpp"
 #include "man.hpp"
+#include "mcts.hpp"
+#include "primitivemc.hpp"
+#include "td.hpp"
 
 Game::Game(std::ifstream &File) {
     File >> round_number >> time_limit;
@@ -18,25 +18,25 @@ Game::Game(std::ifstream &File) {
         std::string str;
         File >> str;
         if (str == "Aho") {
-            player[i] = new Aho(board, i);
+            player[i] = new Aho();
         } else if (str == "AlphaBeta") {
-            player[i] = new AlphaBeta(board, i, time_limit);
+            player[i] = new AlphaBeta(time_limit);
         } else if (str == "PrimitiveMC") {
-            player[i] = new PrimitiveMC(board, i, time_limit);
+            player[i] = new PrimitiveMC(time_limit);
         } else if (str == "MCTS") {
             double c;
             File >> c;
-            player[i] = new MCTS(board, i, time_limit, c);
+            player[i] = new MCTS(time_limit, c);
         } else if (str == "TD") {
             std::string dirname;
             File >> dirname;
-            player[i] = new TD(board, i, dirname, true);
+            player[i] = new TD(dirname, true);
         } else if (str == "Man") {
-            player[i] = new Man(board, i);
+            player[i] = new Man();
         } else {
             std::cout << "PLAYER NAME ERROR" << std::endl;
             std::cout << "Aho is used." << std::endl;
-            player[i] = new Aho(board, i);
+            player[i] = new Aho();
         }
     }
 }
@@ -47,26 +47,25 @@ Game::~Game() {
 }
 
 void Game::oneplay() {
-    init(board);
-    int turn = 0;
+    initBoard(board);
     while (1) {
         // 石を置けないならパス
-        if (!isPuttableBoard(board, playerID)) {
-            playerID = 1 - playerID;
+        if (!isPuttableBoard(board, color)) {
+            color = getOpponentColor(color);
+            turn = 1 - turn;
             // 交代した人も置けないならゲーム終了
-            if (!isPuttableBoard(board, playerID)) break;
+            if (!isPuttableBoard(board, color)) break;
         }
 
-
-        // プレイヤーplayerID が石を置く
+        // color が石を置く
         while (1) {
-            int pos = player[playerID]->getPos();
-            if (putStone(board, playerID, pos)) break;
+            int pos = player[turn]->getPos(board, color);
+            if (putStone(board, color, pos)) break;
         }
 
         // ターンを変更
-        playerID = 1 - playerID;
-        turn++;
+        color = getOpponentColor(color);
+        turn = 1 - turn;
     }
 }
 
@@ -74,20 +73,27 @@ void Game::play() {
     int win1 = 0;
     int win2 = 0;
     for (int irn = 0; irn < round_number; irn++) {
-        playerID = irn % 2;
+        black = irn % 2;  // 先行は交互
+        turn = black;
+        color = BLACK;  // 最初は黒が先行
         // 一回プレイ
         oneplay();
 
-        // 勝敗判定
+        // 勝敗判定 (ややこしい)
         int winner = getWinner(board);
-        if (winner == 0) win1++;
-        else if(winner == 1) win2++;
+        if ((winner == BLACK && black == 0) || (winner == WHITE && black == 1))
+            win1++;
+        else if ((winner == WHITE && black == 0) ||
+                 (winner == BLACK && black == 1))
+            win2++;
 
         // 結果を出力
-        print(board);
+        printBoard(board);
         std::cout << "Current Status: " << win1 << " VS " << win2;
-        std::cout << " (" << std::fixed << std::setw(8) << static_cast<double>(100*win1) / std::max(1, (win1+win2)) << "%)\n\n";
+        std::cout << " (" << std::fixed << std::setw(8)
+                  << static_cast<double>(100 * win1) / (win1 + win2) << "%)\n";
     }
     std::cout << "Final Result: ";
-    std::cout << win1 << " VS " << win2 << " (" << static_cast<double>(100*win1) / (win1 + win2) << "%)\n";
+    std::cout << win1 << " VS " << win2 << " ("
+              << static_cast<double>(100 * win1) / (win1 + win2) << "%)\n";
 }

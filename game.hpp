@@ -2,10 +2,13 @@
 
 #include "player.hpp"
 #include <fstream>
+#include <array>
 
 class Game {
-    int board[64];
-    int playerID;
+    std::array<Stone, SIZE2> board;
+    int black; // 先行のplayerID
+    int color; // 現在のターン色
+    int turn;  // 現在のターンID
     int round_number;
     double time_limit;
     Player *player[2];

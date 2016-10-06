@@ -6,66 +6,59 @@
 #include "td.hpp"
 
 Trainer::Trainer(int rn, std::string &dirname) : round_number(rn){
-    learner = new TD(board, 0, dirname, false);
+    learner = new TD(dirname, false);
 }
 
 Trainer::~Trainer() { delete learner; }
 
-void Trainer::oneplay() {
-    init(board, rand() % 2);
-    int turn = 0;
-
+void Trainer::oneplay(Stone mycolor) {
+    initBoard(board);
+    int step = 0;
     while (1) {
         // 学習
-        learner->train(turn, playerID);
+        learner->train(board, step, mycolor, color);
 
         // 石を置けないならパス
-        if (!isPuttableBoard(board, playerID)) {
-            playerID = 1 - playerID;
+        if (!isPuttableBoard(board, color)) {
+            color = getOpponentColor(color);
+            turn = 1 - turn;
             // 交代した人も置けないならゲーム終了
-            if (!isPuttableBoard(board, playerID)) break;
+            if (!isPuttableBoard(board, color)) break;
         }
 
-        if (playerID == 0) {
-            putStone(board, 0, learner->getPos());
-        } else {
-            putStone(board, 1, learner->getOpponentPos());
-        }
+        putStone(board, color, learner->getPos(board, color));
 
         // ターンを変更
-        playerID = 1 - playerID;
-        turn++;
+        color = getOpponentColor(color);
+        turn = 1 - turn;
+        step++;
     }
 }
 
 void Trainer::play() {
-////    int win1 = 0;
-////    int win2 = 0;
+    int win1 = 0;
+    int win2 = 0;
     for (int irn = 1; irn <= round_number; irn++) {
-        playerID = irn % 2;
-        // 一回プレイ
-        oneplay();
+        black = irn % 2;
+        Stone mycolor = (black == 0) ? BLACK : WHITE;
+        turn = black;
+        color = BLACK;
 
-        ///////////////////////////////////////////
-        ////////////        // 勝敗判定
-        //////////// int stones[2];
-        //////////// countStones(board, stones);
-        //////////// if (stones[0] > stones[1])
-        ////////////    win1++;
-        //////////// else if (stones[0] < stones[1])
-        ////////////    win2++;
-        ////////////
-        //////////// ////////////       // 結果を出力
-         ////////////       print(board);
-         ////////////std::cout << "Round" << irn + 1 << "'s result: " << stones[0] << " VS "
-         ////////////         << stones[1] << std::endl;
-         ////////////std::cout << "Current Status: " << win1 << " VS " << win2 << " ("
-         ////////////         << std::fixed << std::setw(8)
-         ////////////         << static_cast<double>(100 * win1) / (win1 + win2) <<
-         ////////////         "%)"
-         ////////////         << std::endl;
-         ////////////std::cout << std::endl;
-        ///////////////////////////////////////////
+        // 一回プレイしてmycolorの場合を育てる
+        oneplay(mycolor);
+
+        // 勝敗判定 (ややこしい)
+        int winner = getWinner(board);
+        if ( (winner == BLACK && black == 0) || (winner == WHITE && black == 1) )
+            win1++;
+        else if ( (winner == WHITE && black == 0) || (winner == BLACK && black == 1) )
+            win2++;
+
+        // 結果を出力
+        printBoard(board);
+        std::cout << "Current Status: " << win1 << " VS " << win2;
+        std::cout << " (" << std::fixed << std::setw(8)
+                  << static_cast<double>(100 * win1) / (win1 + win2) << "%)\n";
 
         std::cout << irn << "/" << round_number << std::endl;
 

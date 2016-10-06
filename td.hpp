@@ -1,33 +1,33 @@
 #pragma once
 
-#include "learner.hpp"
-#include <string>
-#include "network.hpp"
+#include <array>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <string>
+#include "learner.hpp"
+#include "network.hpp"
 using namespace boost::numeric::ublas;
 using namespace boost::numeric;
 
 // TD(lambda) & neural network
 class TD : public Learner {
-    std::string dirname;;
+    std::string dirname;
     bool isBattle;
     double epsilon;
-		int training_count;
+    int training_count;
 
-    int board_old[64];
+    std::array<Stone, SIZE2> board_old;
     Network *network;
     // private member functions
-    void arr2vec(const int b[64], vector<int> &v) const;
-    void arr2vec(const int b[64], vector<int> &v, int pID) const;
+    // 自分が color のときのインプットの表現を得る
+    void arr2vec(const std::array<Stone, SIZE2> &board, vector<int> &vboard, int color) const;
 public:
-    TD(int b[64], int pID, std::string dn, bool isB);
+    TD(std::string dn, bool isB);
     ~TD();
     bool isMan() const;
-    int getPos() const;
-    int getOpponentPos() const;
-    void train(int t, int pID);
+    int getPos(const std::array<Stone, SIZE2> &board, int color) const;
+    void train(const std::array<Stone, SIZE2> &board, int step, Stone mycolor, int color);
     void read();
     void write() const;
-    double getValue(const int b[64]) const;
-    double getValue(const int b[64], int pID) const;
+    double getValue(const std::array<Stone, SIZE2> &board, int color) const;
+    double getValue(const vector<int> &vboard) const;
 };

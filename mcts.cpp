@@ -4,39 +4,24 @@
 
 #include <cmath>
 #include <ctime>
-#include <iostream>
 #include <random>
-#include <cstring>
 
-// node 以下のノードを全て表示するヘルパ関数
-void printnode(Node* node) {
-    std::cout << "w:" << node->w << " n:" << node->n
-              << " pID:" << node->playerID << std::endl;
-    print(node->board);
-    if (!node->children.empty()) {
-        for (auto itr = node->children.begin(); itr != node->children.end();
-             itr++) {
-            printnode(*itr);
-        }
-    }
-    std::cout << "\n\n";
-}
+#include <iostream>
 
-MCTS::MCTS(int b[64], int pID, double tl, double cc = 1.0)
-    : Player(b, pID), time_limit(tl), c(cc) {}
-MCTS::~MCTS(){}
+MCTS::MCTS(double tl, double cc = 1.0) : Player(), time_limit(tl), c(cc) {}
+MCTS::~MCTS() {}
 
 bool MCTS::isMan() const { return false; }
 
-// [前のターンの情報を記憶しておくともっと良くなりそうだが、実際にどうやるのかはわからない]
-int MCTS::getPos() const {
+// [前のターンの情報を記憶しておくともっと良くなりそうだが、結構大変そう]
+int MCTS::getPos(const std::array<Stone, SIZE2>& board, int color) const {
     clock_t ct1 = clock();
 
     // 現在の board から root を作成
     Node* root = new Node();
-    // root の状態は MCTS の状態
-    root->playerID = playerID;
-    memcpy(root->board, board, sizeof(root->board));
+    root->board = board;
+    root->color = color;
+    expand(root);
 
     // time_limit に達するまでサンプリングする
     int loop = 0;
@@ -51,19 +36,21 @@ int MCTS::getPos() const {
             node = getOptChild(node, loop, c);
         }
 
-        // node が終端状態でなければ展開する
-        if (!isEnd(node->board)) {
+        // node を初めて訪れたのではなく、かつnode が終端状態でないなら展開する
+        if (node->n != 0 && !isEnd(node->board)) {
             expand(node);
-            // 新しい葉に移動する
+            // 新しい葉のうちの一つに移動する
             node = node->children[0];
         }
-
         // プレイアウトして返ってきた結果を root までバックプロパゲーション
         backpropagation(node, playout(node));
 
         ct2 = clock();
         time = static_cast<double>(ct2 - ct1) / CLOCKS_PER_SEC;
     } while (time < time_limit);
+
+    // 勝率を表示
+    //std::cout << "Percentage:" << 100.0 * root->w / root->n << "%" << std::endl;
 
     // 手を決めるときには分散の寄与をなくす
     Node* child_opt = getOptChild(root, loop, 0.0);
@@ -94,20 +81,11 @@ Node* MCTS::getOptChild(Node* node, int t, double cc) const {
         // まだ一回も訪問していない時は優先する
         if ((*itr)->n == 0) return *itr;
 
+        // 勝率
         double weight = (*itr)->w / (*itr)->n;
+        // 分散の寄与を足す
         weight +=
             cc * std::sqrt(2.0 * std::log(static_cast<double>(t) / (*itr)->n));
-
-//        // ヒューリスティックス
-//        double h = 0.0;
-//        const int corner[4] = {0, 7, 8*7, 8*7+7};
-//        for(int i=0; i<4; i++){
-//            if(node->board[corner[i]] == NOONE){
-//                if((*itr)->board[corner[i]] == node->playerID) h++;
-//                else if((*itr)->board[corner[i]] == 1 - node->playerID) h--;
-//            }
-//        }
-//        h *= 10;
 
         if (weight_max < weight) {
             weight_max = weight;
@@ -118,20 +96,25 @@ Node* MCTS::getOptChild(Node* node, int t, double cc) const {
 }
 
 void MCTS::expand(Node* par) const {
-    int pID;
-    // par のプレイヤーが石を置けるならそのままで、置けないならターン交代
-    if (isPuttableBoard(par->board, par->playerID))
-        pID = par->playerID;
-    else
-        pID = 1 - par->playerID;
-
     // 全てのマスを探索して、置けるなら子を作成
-    for (int pos = 0; pos < 64; pos++) {
-        if (isPuttable(par->board, pID, pos)) {
-            Node* chil = new Node(par);
-            putStone(chil->board, pID, pos);
-            chil->playerID = 1 - pID;
+    for (int pos = 0; pos < SIZE2; pos++) {
+        if (isValidPos(par->board, par->color, pos)) {
+            // Valid な pos なら子を作成
+            Node* chil = new Node();
+            // 親board を子boardにコピー
+            chil->board = par->board;
+            // 子の親ポインタを設定
+            chil->parent = par;
+            // 親の子ポインタを設定
+            par->children.push_back(chil);
+            // 親ボードのどこに置いたのかを覚えておく
             chil->pos = pos;
+            // 子のボードに実際に石を置く
+            putStone(chil->board, par->color, pos);
+            // expand した直後に子の手番を判定しておく
+            int color = getOpponentColor(par->color);
+            if (isPuttableBoard(chil->board, color)) chil->color = color;
+            else chil->color = par->color;
         }
     }
 }
@@ -140,40 +123,42 @@ void MCTS::expand(Node* par) const {
 int MCTS::playout(const Node* node) const {
     static std::random_device seed_gen;
     static std::mt19937 mt(seed_gen());
-    static std::uniform_int_distribution<> rand64(0, 63);
+    static std::uniform_int_distribution<> rand64(0, SIZE2-1);
 
-    int b[64];
-    memcpy(b, node->board, sizeof(b));
-    int pID = node->playerID;
+    std::array<Stone, SIZE2> board = node->board;
+    int color = node->color;
 
-    while(1){
-        if(!isPuttableBoard(b, pID)){
-            pID = 1 - pID;
-            if(!isPuttableBoard(b, pID)) break;
+    while (1) {
+        if (!isPuttableBoard(board, color)) {
+            color = getOpponentColor(color);
+            if (!isPuttableBoard(board, color)) break;
         }
 
         while (1) {
-            int pos = rand64(mt);
-            if (putStone(b, pID, pos)) break;
+            if (putStone(board, color, rand64(mt))) break;
         }
-
-        pID = 1 - pID;
+        color = getOpponentColor(color);
     }
-    return getWinner(b);
+    return getWinner(board);
 }
 
+// node から親へ向かって winner をバックプロパゲーションする
 void MCTS::backpropagation(Node* node, int winner) const {
     // 今の UCB を使うとき、return は [0, 1] 内にないといけない
-    // after state を見ているので、親の playerID と winner を比較すべし
-    do {
-        if(winner == node->parent->playerID) node->w += 1.0;
-        else if(winner == NOONE) node->w += 0.5;
+    // after state を見ているので、親の color と winner を比較すべし
+    while (node->parent != nullptr){
+        if (winner == node->parent->color)
+            node->w += 1.0;
+        else if (winner == EMPTY)
+            node->w += 0.5;
         node->n++;
         node = node->parent;
-    } while (node->parent != nullptr);
-
-    // root には親がいないので場合分け
-    if(winner == node->playerID) node->w += 1.0;
-    else if(winner == NOONE) node->w += 0.5;
+    }
+    // この時点で node は root を指している
+    // root には親がいないので結局の勝率を計算しておく
+    if (winner == node->color)
+        node->w += 1.0;
+    else if (winner == EMPTY)
+        node->w += 0.5;
     node->n++;
 }

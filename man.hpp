@@ -1,11 +1,12 @@
 #pragma once
 
 #include "player.hpp"
+#include <array>
 
 class Man : public Player{
 public:
-    Man(int b[64], int pID);
+    Man();
     ~Man();
     bool isMan() const;
-    int getPos() const;
+    int getPos(const std::array<Stone, SIZE2> &board, int color) const;
 };

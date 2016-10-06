@@ -49,6 +49,11 @@ inline double Network::dsigmoid(double x) const {
     return (1.0 - sigmoid(x)) * sigmoid(x);
 }
 
+// tanh
+inline double Network::tanh(double x) const {return std::tanh(x);}
+inline double Network::dtanh(double x) const {return 1.0 - tanh(x) * tanh(x);}
+
+
 void Network::train(const vector<int> &x, double y) {
     // Dropout mask
     static std::random_device seed_gen;
@@ -78,34 +83,34 @@ void Network::train(const vector<int> &x, double y) {
     z[0] = x;
     // forward calculation
     // u[i] = w[i].z[i-1] + b[i]
-    // z[i] = ReLU(u[i])
+    // z[i] = f(u[i])
     for (int i = 1; i < L - 1; i++) {
         u[i] = prod(w[i], z[i - 1]) + b[i];
-        for (size_t j = 0; j < z[i].size(); j++) z[i](j) = ReLU(u[i](j));
+        for (size_t j = 0; j < z[i].size(); j++) z[i](j) = tanh(u[i](j));
         // Dropout mask
         if (dropout) {
             for (size_t j = 0; j < z[i].size(); j++) z[i](j) *= mask[i](j);
         }
     }
-    // 出力層の活性化関数はシグモイド
+    // 出力層の活性化関数は変える
     u[L - 1] = prod(w[L - 1], z[L - 2]) + b[L - 1];
-    z[L - 1](0) = sigmoid(u[L - 1](0));
+    z[L - 1](0) = tanh(u[L - 1](0));
     double est = z[L - 1](0);
 
     double delta = y - est;
 
     // backward calculation
     // d[L-1] = y_data - y_pred
-    // d[i] = dReLU(u[i])*(trans(w[i+1]).d[i+1])
+    // d[i] = df(u[i])*(trans(w[i+1]).d[i+1])
     // dW[i] = d[i].trans(z[i-1])
     // db[i] = d[i]
     // TD(lambda)では∇vのみを計算するので、y_data - y_pred はない
-    d[L - 1](0) = dsigmoid(u[L - 1](0));
+    d[L - 1](0) = dtanh(u[L - 1](0));
     for (int i = L - 2; i > 0; i--) {
         vector<double> v(N[i]);
         v = prod(trans(w[i + 1]), d[i + 1]);
         for (size_t j = 0; j < d[i].size(); j++)
-            d[i](j) = dReLU(u[i](j)) * v(j);
+            d[i](j) = dtanh(u[i](j)) * v(j);
         // Dropout mask
         if (dropout) {
             for (size_t j = 0; j < d[i].size(); j++) d[i](j) *= mask[i](j);
@@ -167,15 +172,15 @@ void Network::train(const vector<int> &x, double y) {
             }
         }
 
-        // バイアス項は正則化しない
-        for (size_t j = 0; j < b[i].size(); j++) {
-            double grad = -(delta * eb[i](j));
-            rb_ad[i](j) = rho * rb_ad[i](j) + (1.0 - rho) * grad * grad;
-            double v = -sqrt(sb_ad[i](j) + epsilon) /
-                       sqrt(rb_ad[i](j) + epsilon) * grad;
-            sb_ad[i](j) = rho * sb_ad[i](j) + (1.0 - rho) * v * v;
-            b[i](j) += v;
-        }
+///////////////////////        // バイアス項は正則化しない
+///////////////////////        for (size_t j = 0; j < b[i].size(); j++) {
+///////////////////////            double grad = -(delta * eb[i](j));
+///////////////////////            rb_ad[i](j) = rho * rb_ad[i](j) + (1.0 - rho) * grad * grad;
+///////////////////////            double v = -sqrt(sb_ad[i](j) + epsilon) /
+///////////////////////                       sqrt(rb_ad[i](j) + epsilon) * grad;
+///////////////////////            sb_ad[i](j) = rho * sb_ad[i](j) + (1.0 - rho) * v * v;
+///////////////////////            b[i](j) += v;
+///////////////////////        }
     }
 }
 
@@ -190,14 +195,14 @@ double Network::getValue(const vector<int> &x) const {
     z[0] = x;
     for (int i = 1; i < L - 1; i++) {
         u[i] = prod(w[i], z[i - 1]) + b[i];
-        for (size_t j = 0; j < z[i].size(); j++) z[i](j) = ReLU(u[i](j));
+        for (size_t j = 0; j < z[i].size(); j++) z[i](j) = tanh(u[i](j));
         // Factor due to Dropout
         if (dropout) {
             z[i] *= 0.5;
         }
     }
     u[L - 1] = prod(w[L - 1], z[L - 2]) + b[L - 1];
-    z[L - 1](0) = sigmoid(u[L - 1](0));
+    z[L - 1](0) = tanh(u[L - 1](0));
 
     return z[L - 1](0);
 }

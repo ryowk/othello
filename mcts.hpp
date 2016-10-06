@@ -1,22 +1,18 @@
 #pragma once
 
+#include <array>
 #include <vector>
 #include "player.hpp"
 
 struct Node {
-    double w;         // 〜勝利数 (win: 1, draw: 0.5, lose: 0)
-    int n;         // 実行回数
-    int playerID;  // ノードにおけるplayerID
-    int board[64];
-    int pos;  // 親から pos に石を置いた
+    double w;   // 〜勝利数 (win: 1, draw: 0.5, lose: 0)
+    int n;      // 実行回数
+    int color;  // パスも考慮して、このノードでの手番色
+    std::array<Stone, SIZE2> board;  // ノードにおける board
+    int pos;                         // 親から pos に石を置いた
     Node* parent;
     std::vector<Node*> children;
     Node() : w(0), n(0), parent(nullptr) {}
-    // 親を元にしたコンストラクタ
-    Node(Node* par) : w(0), n(0), parent(par) {
-        for (int i = 0; i < 64; i++) board[i] = par->board[i];
-        par->children.push_back(this);
-    }
 };
 
 class MCTS : public Player {
@@ -27,9 +23,10 @@ class MCTS : public Player {
     Node* getOptChild(Node* node, int t, double cc) const;
     void expand(Node* par) const;
     void erase(Node* node) const;
+
 public:
-    MCTS(int b[64], int pID, double tl, double cc);
+    MCTS(double tl, double cc);
     ~MCTS();
     bool isMan() const;
-    int getPos() const;
+    int getPos(const std::array<Stone, SIZE2>& board, int color) const;
 };

@@ -6,8 +6,8 @@
 #include "constants.hpp"
 #include "functions.hpp"
 
-TD::TD(int b[64], int pID, std::string dn, bool isB)
-    : Learner(b, pID), dirname(dn), isBattle(isB), training_count(0) {
+TD::TD(std::string dn, bool isB)
+    : Learner(), dirname(dn), isBattle(isB), training_count(0) {
     read();
 }
 
@@ -28,8 +28,8 @@ void TD::read() {
         file_para >> temp;
         N.push_back(temp);
     }
-    if (L < 3 || N.front() != 128 || N.back() != 1) {
-        std::cout << "N should be 128 *,..., *, 1.\n";
+    if (L < 3 || N.front() != SIZE2 || N.back() != 1) {
+        std::cout << "N should be SIZE2 *,..., *, 1.\n";
         std::exit(0);
     }
 
@@ -60,14 +60,14 @@ void TD::write() const {
 
 bool TD::isMan() const { return false; }
 
-int TD::getPos() const {
+int TD::getPos(const std::array<Stone, SIZE2> &board, int color) const {
     static std::random_device seed_gen;
     static std::mt19937 mt(seed_gen());
     static std::uniform_real_distribution<> drand(0.0, 1.0);
 
     // 取りうる全ての action を得る
     std::vector<int> v;
-    getPuttablePos(board, playerID, v);
+    getAllValidPos(board, color, v);
 
     int pos_opt;
     // epsilon の確率でランダムな場所に置く
@@ -79,10 +79,9 @@ int TD::getPos() const {
         double val_max = -1.0e128;
         for (size_t i = 0; i < v.size(); i++) {
             int pos = v[i];
-            int b[64];
-            memcpy(b, board, sizeof(b));
-            putStone(b, playerID, pos);
-            double val = getValue(b);
+            std::array<Stone, SIZE2> board_cpy = board;
+            putStone(board_cpy, color, pos);
+            double val = getValue(board_cpy, color);
             if (val > val_max) {
                 val_max = val;
                 pos_opt = pos;
@@ -92,107 +91,63 @@ int TD::getPos() const {
     return pos_opt;
 }
 
-// 自己学習用
-// 相手は相手の value を最大化する手を選ぶ
-// 相手は自分の value を最小化する手を選ぶようにしても良いが
-// その場合は自分の方が有利になってしまう
-int TD::getOpponentPos() const {
-    static std::random_device seed_gen;
-    static std::mt19937 mt(seed_gen());
-    static std::uniform_real_distribution<> drand(0.0, 1.0);
-
-    std::vector<int> v;
-    getPuttablePos(board, 1 - playerID, v);
-
-    int pos_opt;
-    if (drand(mt) < epsilon && !isBattle) {
-        pos_opt = v[static_cast<int>(drand(mt) * v.size())];
-    } else {
-        double val_max = -1.0e128;
-        for (size_t i = 0; i < v.size(); i++) {
-            int pos = v[i];
-            int b[64];
-            memcpy(b, board, sizeof(b));
-            putStone(b, 1 - playerID, pos);
-
-            double val = getValue(b, 1 - playerID);
-            if (val > val_max) {
-                val_max = val;
-                pos_opt = pos;
-            }
-        }
-    }
-    return pos_opt;
-}
-
-void TD::train(int t, int pID) {
+void TD::train(const std::array<Stone, SIZE2> &board, int step, Stone mycolor,
+               int color) {
+    // mycolor 視点の value を求めたいので、arr2vec は全て mycolor に基づく
     // ゲーム終了なら勝敗に応じた reward を return とする
-
     if (isEnd(board)) {
-        vector<int> bd(128), bd_old(128);
-        arr2vec(board, bd);
-        arr2vec(board_old, bd_old);
+        vector<int> vboard(SIZE2), vboard_old(SIZE2);
+        arr2vec(board, vboard, mycolor);
+        arr2vec(board_old, vboard_old, mycolor);
 
         int winner = getWinner(board);
         double reward;
-        if (winner == playerID)
+        if (winner == mycolor)
             reward = 1.0;
-        else if (winner == 1 - playerID)
+        else if (winner == getOpponentColor(mycolor))
             reward = 0.0;
         else
             reward = 0.5;
-        network->train(bd_old, reward);
-        network->train(bd, reward);
+        network->train(vboard_old, reward);
+        network->train(vboard, reward);
         training_count++;
+        std::cout << "COUNTED" << std::endl;
         return;
     }
 
     // afterstate なので、自分の番では更新しない
-    if (pID == playerID) return;
+    if (mycolor == color) return;
 
     // 初手なら更新しない
-    if (t == 0 || t == 1) {
-        memcpy(board_old, board, sizeof(board_old));
+    if (step == 0 || step == 1) {
+        board_old = board;
         network->unset_et();
         return;
     }
 
     // TD(lambda)
-    vector<int> bd_old(128);
-    arr2vec(board_old, bd_old);
-    double value = getValue(board);
-    network->train(bd_old, value);
+    vector<int> vboard_old(SIZE2);
+    arr2vec(board_old, vboard_old, mycolor);
+    double value = getValue(board, mycolor);
+    network->train(vboard_old, value);
 
-    memcpy(board_old, board, sizeof(board_old));
-}
-
-double TD::getValue(const int b[64]) const {
-    vector<int> bd(128);
-    arr2vec(b, bd);
-    return network->getValue(bd);
-}
-double TD::getValue(const int b[64], int pID) const {
-    vector<int> bd(128);
-    arr2vec(b, bd, pID);
-    return network->getValue(bd);
+    board_old = board;
 }
 
-// 配列から boost のベクトルに変換する
-void TD::arr2vec(const int b[64], vector<int> &v) const {
-    v.clear();
-    for (int i = 0; i < 64; i++) {
-        if (b[i] == playerID)
-            v(2 * i) = 1;
-        else if (b[i] == 1 - playerID)
-            v(2 * i + 1) = 1;
-    }
+double TD::getValue(const std::array<Stone, SIZE2> &board, int color) const {
+    vector<int> vboard(SIZE2);
+    arr2vec(board, vboard, color);
+    return network->getValue(vboard);
 }
-void TD::arr2vec(const int b[64], vector<int> &v, int pID) const {
-    v.clear();
-    for (int i = 0; i < 64; i++) {
-        if (b[i] == pID)
-            v(2 * i) = 1;
-        else if (b[i] == 1 - pID)
-            v(2 * i + 1) = 1;
-    }
+
+double TD::getValue(const vector<int> &vboard) const{
+    return network->getValue(vboard);
+}
+
+// 自分の石なら+1、相手の石なら-1、空きなら0と表現する
+void TD::arr2vec(const std::array<Stone, SIZE2> &board, vector<int> &vboard,
+                 int color) const {
+    vboard.clear();
+    // Stone が -1, 0, 1 であることを仮定している
+    for (int i = 0; i < SIZE2; i++) vboard(i) = board[i] * color;
 }

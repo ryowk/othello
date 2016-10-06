@@ -1,18 +1,21 @@
 #pragma once
 
-#include "learner.hpp"
+#include <array>
 #include <fstream>
+#include "learner.hpp"
 
 class Trainer {
-public:
-    int board[64];
+    int black;
+    int turn;
+    int color;
     int round_number;
-    int playerID;
+    std::array<Stone, SIZE2> board;
     Learner *learner;
 
+public:
     // public member functions
     Trainer(int rn, std::string &dirname);
     ~Trainer();
     void play();
-    void oneplay();
+    void oneplay(Stone mycolor);
 };

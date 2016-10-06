@@ -1,79 +1,81 @@
 #include "alphabeta.hpp"
 #include <ctime>
 #include "functions.hpp"
-#include <cstring>
 
-AlphaBeta::AlphaBeta(int b[64], int pID, double tl)
-    : Player(b, pID), time_limit(tl), h_corner(100), h_win(10000) {}
+AlphaBeta::AlphaBeta(double tl)
+    : Player(), time_limit(tl), heur_corner(100), heur_win(1000000) {}
 AlphaBeta::~AlphaBeta() {}
 
 bool AlphaBeta::isMan() const { return false; }
 
-int AlphaBeta::getPos() const {
+int AlphaBeta::getPos(const std::array<Stone, SIZE2> &board, int color) const {
     clock_t ct1 = clock();
     double time;
 
     int pos_opt;
 
-    int depth = 1;
+    int depth = 0;
     int eval_max;
     // 反復深化
     do {
         eval_max = -1000000000;
         depth++;
         std::vector<int> vpos;
-        getPuttablePos(board, playerID, vpos);
+        getAllValidPos(board, color, vpos);
         for (size_t i = 0; i < vpos.size(); i++) {
             int pos = vpos[i];
-            int b2[64];
-            memcpy(b2, board, sizeof(b2));
-            putStone(b2, playerID, pos);
-            int eval_t =
-                dfs(b2, 1 - playerID, depth - 1, -1000000000, 1000000000);
-            if (eval_max < eval_t) {
-                eval_max = eval_t;
+            std::array<Stone, SIZE2> board_cpy = board;
+            putStone(board_cpy, color, pos);
+            int val = dfs(board_cpy, color, getOpponentColor(color), depth - 1,
+                          -1000000000, 1000000000);
+            if (eval_max < val) {
+                eval_max = val;
                 pos_opt = pos;
             }
         }
         clock_t ct2 = clock();
         time = static_cast<double>(ct2 - ct1) / CLOCKS_PER_SEC;
-        // 深さを1増やすと2倍以上時間がかかると考えられるので早めに切り上げる
-    } while (time < time_limit / 2.0 && eval_max < h_win);
+//        // 深さを1増やすと2倍以上時間がかかると考えられるので早めに切り上げる
+//    } while (time < time_limit / 2.0 && eval_max < heur_win);
+    } while (time < time_limit && eval_max < heur_win);
     return pos_opt;
 }
 
-// pID == playerID のとき、evalが最大となるものを返す
-// pID != playerID のとき、evalが最小となるものを返す
-int AlphaBeta::dfs(const int b[64], int pID, int d, int alpha, int beta) const {
+int AlphaBeta::dfs(const std::array<Stone, SIZE2> &board, int root_color,
+                   int color, int depth, int alpha, int beta) const {
     // 設定した深さまで探索したなら評価値を返す
-    if (d == 0) return eval(b);
+    if (depth == 0) return eval(board, root_color);
     // 投了なら無限大の重みをつけた評価値を返す
-    if (isEnd(b)) return h_win * eval(b);
+    // color = +-1 であることを仮定している
+    if (isEnd(board)) return heur_win * getWinner(board) * root_color;
 
     // その時のプレイヤーが置けないならターンを変える
-    if (!isPuttableBoard(b, pID)) return dfs(b, 1 - pID, d, alpha, beta);
+    if (!isPuttableBoard(board, color))
+        return dfs(board, root_color, getOpponentColor(color), depth, alpha,
+                   beta);
 
-    if (pID == playerID) {
-        std::vector<int> vpos;
-        getPuttablePos(b, pID, vpos);
+    std::vector<int> vpos;
+    getAllValidPos(board, color, vpos);
+
+    if (color == root_color) {
         for (size_t i = 0; i < vpos.size(); i++) {
             int pos = vpos[i];
-            int b2[64];
-            memcpy(b2, b, sizeof(b2));
-            putStone(b2, pID, pos);
-            alpha = std::max(alpha, dfs(b2, 1 - pID, d - 1, alpha, beta));
+            std::array<Stone, SIZE2> board_cpy = board;
+            putStone(board_cpy, color, pos);
+            alpha = std::max(alpha,
+                             dfs(board_cpy, root_color, getOpponentColor(color),
+                                 depth - 1, alpha, beta));
             if (alpha >= beta) return beta;
         }
         return alpha;
     } else {
-        std::vector<int> vpos;
-        getPuttablePos(b, pID, vpos);
         for (size_t i = 0; i < vpos.size(); i++) {
             int pos = vpos[i];
-            int b2[64];
-            memcpy(b2, b, sizeof(b2));
-            putStone(b2, pID, pos);
-            beta = std::min(beta, dfs(b2, 1 - pID, d - 1, alpha, beta));
+            std::array<Stone, SIZE2> board_cpy = board;
+            putStone(board_cpy, color, pos);
+            beta = std::min(beta,
+                            dfs(board_cpy, root_color, getOpponentColor(color),
+                                depth - 1, alpha, beta));
             if (alpha >= beta) return alpha;
         }
         return beta;
@@ -81,18 +83,19 @@ int AlphaBeta::dfs(const int b[64], int pID, int d, int alpha, int beta) const {
 }
 
 // 評価関数（石の差＆角の重み）
-int AlphaBeta::eval(const int b[64]) const {
+int AlphaBeta::eval(const std::array<Stone, SIZE2> &board, int color) const {
     int stones[2];
-    countStones(b, stones);
+    countStones(board, stones);
     // Heuristic
-    int h = 0;
-    int corner[4] = {0, 7, 8 * 7, 8 * 7 + 7};
+    int heur = 0;
+    const int corner[4] = {0, SIZE1 - 1, SIZE1 * (SIZE1 - 1), SIZE2 - 1};
     for (int i = 0; i < 4; i++) {
-        if (b[corner[i]] == playerID)
-            h++;
-        else if (b[corner[i]] == 1 - playerID)
-            h--;
+        if (board[corner[i]] == BLACK)
+            heur++;
+        else if (board[corner[i]] == WHITE)
+            heur--;
     }
-    h *= h_corner;
-    return stones[playerID] - stones[1 - playerID] + h;
+    heur *= heur_corner;
+    int black_white = stones[0] - stones[1] + heur;
+    return black_white * color;
 }

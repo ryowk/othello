@@ -1,12 +1,12 @@
 #pragma once
 
+#include <array>
+#include "constants.hpp"
+
 class Player{
-protected:
-    const int *board;
-    const int playerID;
 public:
-    Player(int b[64], int pID);
+    Player();
     virtual ~Player();
     virtual bool isMan() const = 0;
-    virtual int getPos() const = 0;
+    virtual int getPos(const std::array<Stone, SIZE2> &board, int color) const = 0;
 };

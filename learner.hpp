@@ -1,13 +1,13 @@
 #pragma once
 
 #include "player.hpp"
+#include <array>
 
 class Learner : public Player {
 public:
-    Learner(int b[64], int pID);
+    Learner();
     virtual ~Learner();
-    virtual void train(int t, int pID) = 0;
-    virtual int getOpponentPos() const = 0;
+    virtual void train(const std::array<Stone, SIZE2> &board, int step, Stone mycolor, int color) = 0;
     virtual void read() = 0;
     virtual void write() const = 0;
 };

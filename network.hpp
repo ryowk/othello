@@ -41,6 +41,8 @@ class Network {
     double dReLU(double x) const;
     double sigmoid(double x) const;
     double dsigmoid(double x) const;
+    double tanh(double x) const;
+    double dtanh(double x) const;
 
 public:
     Network(const std::vector<int> &n, double lam, double lam2,
