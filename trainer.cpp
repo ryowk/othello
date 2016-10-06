@@ -47,18 +47,18 @@ void Trainer::play() {
         // 一回プレイしてmycolorの場合を育てる
         oneplay(mycolor);
 
-        // 勝敗判定 (ややこしい)
-        int winner = getWinner(board);
-        if ( (winner == BLACK && black == 0) || (winner == WHITE && black == 1) )
-            win1++;
-        else if ( (winner == WHITE && black == 0) || (winner == BLACK && black == 1) )
-            win2++;
+        /////// 勝敗判定 (ややこしい)
+        /////int winner = getWinner(board);
+        /////if ( (winner == BLACK && black == 0) || (winner == WHITE && black == 1) )
+        /////    win1++;
+        /////else if ( (winner == WHITE && black == 0) || (winner == BLACK && black == 1) )
+        /////    win2++;
 
-        // 結果を出力
-        printBoard(board);
-        std::cout << "Current Status: " << win1 << " VS " << win2;
-        std::cout << " (" << std::fixed << std::setw(8)
-                  << static_cast<double>(100 * win1) / (win1 + win2) << "%)\n";
+        /////// 結果を出力
+        /////printBoard(board);
+        /////std::cout << "Current Status: " << win1 << " VS " << win2;
+        /////std::cout << " (" << std::fixed << std::setw(8)
+        /////          << static_cast<double>(100 * win1) / (win1 + win2) << "%)\n";
 
         std::cout << irn << "/" << round_number << std::endl;
 

@@ -111,7 +111,6 @@ void TD::train(const std::array<Stone, SIZE2> &board, int step, Stone mycolor,
         network->train(vboard_old, reward);
         network->train(vboard, reward);
         training_count++;
-        std::cout << "COUNTED" << std::endl;
         return;
     }
 
