@@ -11,10 +11,13 @@ class Game {
     int turn;  // 現在のターンID
     int round_number;
     double time_limit;
+    std::string player_name[2];
     Player *player[2];
 public:
     Game(std::ifstream &File);
     ~Game();
     void play();
+    void play(double &ratio);
     void oneplay();
+    void setPlayer(Player *p, int id);
 };

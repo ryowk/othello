@@ -7,7 +7,7 @@
 #include "functions.hpp"
 
 TD::TD(std::string dn, bool isB)
-    : Learner(), dirname(dn), isBattle(isB), training_count(0) {
+    : Learner(isB), dirname(dn), training_count(0) {
     read();
 }
 
@@ -41,11 +41,11 @@ void TD::read() {
         std::exit(0);
     }
 
-    double lambda, lambda2;
+    double lambda, alpha, lambda2;
     bool dropout;
-    file_para >> epsilon >> lambda >> lambda2 >> dropout;
+    file_para >> epsilon >> lambda >> alpha >> lambda2 >> dropout;
 
-    network = new Network(N, lambda, lambda2, dropout);
+    network = new Network(N, lambda, alpha, lambda2, dropout);
 
     // 学習済みデータを読み込み
     std::string fname_data = dirname + "coeff";
@@ -113,9 +113,9 @@ void TD::train(const std::array<Stone, SIZE2> &board, int step, Stone mycolor,
         if (winner == mycolor)
             reward = 1.0;
         else if (winner == getOpponentColor(mycolor))
-            reward = 0.0;
+            reward = -1.0;
         else
-            reward = 0.5;
+            reward = 0.0;
         network->train(vboard_old, reward);
         network->train(vboard, reward);
         training_count++;

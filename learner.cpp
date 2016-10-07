@@ -1,4 +1,5 @@
 #include "learner.hpp"
 
-Learner::Learner() : Player(){}
+Learner::Learner(bool isB) : Player(), isBattle(isB){}
 Learner::~Learner(){}
+void Learner::setIsBattle(bool isB){isBattle = isB;}

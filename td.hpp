@@ -11,7 +11,6 @@ using namespace boost::numeric;
 // TD(lambda) & neural network
 class TD : public Learner {
     std::string dirname;
-    bool isBattle;
     double epsilon;
     int training_count;
 

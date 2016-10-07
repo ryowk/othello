@@ -19,11 +19,11 @@ class Network {
     std::vector<vector<double> > b;
 
     // AdaDelta 用
-    std::vector<matrix<double> > rw_ad;
-    std::vector<vector<double> > rb_ad;
-    std::vector<matrix<double> > sw_ad;
-    std::vector<vector<double> > sb_ad;
-    double rho, epsilon;
+    std::vector<matrix<double> > rw_ada;
+    std::vector<vector<double> > rb_ada;
+    std::vector<matrix<double> > sw_ada;
+    std::vector<vector<double> > sb_ada;
+    double rho_ada, epsilon_ada;
 
     // eligibility trace
     std::vector<matrix<double> > ew;
@@ -31,22 +31,22 @@ class Network {
 
     // TD(lambda)
     double lambda;
+    // Learning rate
+    double alpha;
     // degree of L2 regularization
     double lambda_2;
 
     bool dropout;
 
     // private member functions
-    double ReLU(double x) const;
-    double dReLU(double x) const;
-    double sigmoid(double x) const;
-    double dsigmoid(double x) const;
-    double tanh(double x) const;
-    double dtanh(double x) const;
+    double act_func_hidden(double x) const;
+    double dact_func_hidden(double x) const;
+    double act_func_output(double x) const;
+    double dact_func_output(double x) const;
 
 public:
-    Network(const std::vector<int> &n, double lam, double lam2,
-            bool drop = true);
+    Network(const std::vector<int> &n, double lam, double alp, double lam2,
+            bool drop = false);
     void unset_et();
     double getValue(const vector<int> &x) const;
     void train(const vector<int> &x, double y);
