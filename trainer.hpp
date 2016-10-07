@@ -6,7 +6,6 @@
 
 class Trainer {
     int black;
-    int turn;
     int color;
     int round_number;
     std::array<Stone, SIZE2> board;

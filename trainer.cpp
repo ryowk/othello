@@ -23,7 +23,6 @@ void Trainer::oneplay(Stone mycolor) {
         // 石を置けないならパス
         if (!isPuttableBoard(board, color)) {
             color = getOpponentColor(color);
-            turn = 1 - turn;
             // 交代した人も置けないならゲーム終了
             if (!isPuttableBoard(board, color)) break;
         }
@@ -32,7 +31,6 @@ void Trainer::oneplay(Stone mycolor) {
 
         // ターンを変更
         color = getOpponentColor(color);
-        turn = 1 - turn;
         step++;
     }
 }
@@ -47,7 +45,6 @@ void Trainer::play() {
     for (int irn = 1; irn <= round_number; irn++) {
         black = irn % 2;
         Stone mycolor = (black == 0) ? BLACK : WHITE;
-        turn = black;
         color = BLACK;
 
         // 一回プレイしてmycolorの場合を育てる
