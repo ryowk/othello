@@ -7,7 +7,7 @@
 
 #include "game.hpp"
 
-Trainer::Trainer(int rn, std::string &dirname) : round_number(rn){
+Trainer::Trainer(int rn, std::string &dirn) : round_number(rn), dirname(dirn) {
     learner = new TD(dirname, false);
 }
 
@@ -39,7 +39,8 @@ void Trainer::oneplay(Stone mycolor) {
 
 void Trainer::play() {
     std::ifstream File("battle_menu", std::ios::in);
-    std::ofstream Log("rate");
+    dirname = dirname + "rate";
+    std::ofstream Log(dirname);
 
     ///////////////////////////////int win1 = 0;
     ///////////////////////////////int win2 = 0;
