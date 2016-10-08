@@ -64,7 +64,7 @@ inline double Network::act_func_hidden(double x) const {
     return x / (1.0 + fabs(x));
 }
 inline double Network::dact_func_hidden(double x) const {
-    return 1.0 / (1.0 + fabs(x)) * (1.0 + fabs(x));
+    return 1.0 / ((1.0 + fabs(x)) * (1.0 + fabs(x)));
 }
 
 // activation function for the output unit
@@ -73,7 +73,7 @@ inline double Network::act_func_output(double x) const {
     return x / (1.0 + fabs(x));
 }
 inline double Network::dact_func_output(double x) const {
-    return 1.0 / (1.0 + fabs(x)) * (1.0 + fabs(x));
+    return 1.0 / ((1.0 + fabs(x)) * (1.0 + fabs(x)));
 }
 
 void Network::train(const vector<int> &x, double y) {
