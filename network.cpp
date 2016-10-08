@@ -66,10 +66,12 @@ inline double Network::dact_func_hidden(double x) const {
 }
 
 // activation function for the output unit
-// x が大きくなると導関数が 0 になると、更新されなくなってしまうので sin
-// を用いている
-inline double Network::act_func_output(double x) const { return sin(x); }
-inline double Network::dact_func_output(double x) const { return cos(x); }
+// x が大きくなると導関数が 0 になると、更新されなくなってしまうので注意
+inline double Network::act_func_output(double x) const {
+    return x / (1.0+fabs(x)); }
+inline double Network::dact_func_output(double x) const {
+    return 1.0 / (1.0+fabs(x))*(1.0+fabs(x));
+}
 
 void Network::train(const vector<int> &x, double y) {
     // Dropout mask
