@@ -60,17 +60,20 @@ void Network::unset_et() {
 // tanh(x); }
 
 // activation functoin for the hidden units
-inline double Network::act_func_hidden(double x) const { return tanh(x); }
+inline double Network::act_func_hidden(double x) const {
+    return x / (1.0 + fabs(x));
+}
 inline double Network::dact_func_hidden(double x) const {
-    return 1.0 - tanh(x) * tanh(x);
+    return 1.0 / (1.0 + fabs(x)) * (1.0 + fabs(x));
 }
 
 // activation function for the output unit
 // x が大きくなると導関数が 0 になると、更新されなくなってしまうので注意
 inline double Network::act_func_output(double x) const {
-    return x / (1.0+fabs(x)); }
+    return x / (1.0 + fabs(x));
+}
 inline double Network::dact_func_output(double x) const {
-    return 1.0 / (1.0+fabs(x))*(1.0+fabs(x));
+    return 1.0 / (1.0 + fabs(x)) * (1.0 + fabs(x));
 }
 
 void Network::train(const vector<int> &x, double y) {
