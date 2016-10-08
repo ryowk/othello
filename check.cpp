@@ -49,6 +49,8 @@ int main(int argc, char *argv[]) {
 
     // 場所ごとのスコア
     double score_pos[SIZE2] = {0.0};
+    // 場所ごとの出現数
+    int stones_pos[SIZE2] = {0};
     // 石の差に対するスコア(-SIZE2 ~ SIZE2)
     double score_num[2 * SIZE2 + 1] = {0.0};
     // 石の差の出現数
@@ -72,6 +74,7 @@ int main(int argc, char *argv[]) {
                 if (vboard[j] != 0) {
                     score_pos[j] += value * vboard[j];
                     s += vboard[j];
+                    stones_pos[j]++;
                 }
             }
             score_num[s + SIZE2] += value;
@@ -82,7 +85,7 @@ int main(int argc, char *argv[]) {
     for (int y = 0; y < SIZE1; y++) {
         for (int x = 0; x < SIZE1; x++) {
             output << x << " " << y << " "
-                   << score_pos[SIZE1 * y + x]
+                   << score_pos[SIZE1 * y + x] / stones_pos[SIZE1 * y + x]
                    << std::endl;
         }
         output << std::endl;
