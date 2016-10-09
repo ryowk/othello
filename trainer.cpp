@@ -63,7 +63,7 @@ void Trainer::play() {
         /////////////////////////////std::cout << " (" << std::fixed << std::setw(8)
         /////////////////////////////          << static_cast<double>(100 * win1) / (win1 + win2) << "%)\n";
 
-        std::cout << irn << "/" << round_number << std::endl;
+        ////////////////////std::cout << irn << "/" << round_number << std::endl;
 
         if (irn % 1000 == 0) {
             learner->write();
