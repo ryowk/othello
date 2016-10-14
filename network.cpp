@@ -64,16 +64,17 @@ inline double Network::act_func_hidden(double x) const {
     return x / (1.0 + fabs(x));
 }
 inline double Network::dact_func_hidden(double x) const {
-    return 1.0 / ((1.0 + fabs(x)) * (1.0 + fabs(x)));
+    return (1.0 + 2.0 * fabs(x)) / ((1.0 + fabs(x)) * (1.0 + fabs(x)));
 }
 
-// activation function for the output unit
 // x が大きくなると導関数が 0 になると、更新されなくなってしまうので注意
+// return は [-1:1] の中にあるが、勾配が消えないように 2 倍している
+// activation function for the output unit
 inline double Network::act_func_output(double x) const {
-    return x / (1.0 + fabs(x));
+    return 2.0 * x / (1.0 + fabs(x));
 }
 inline double Network::dact_func_output(double x) const {
-    return 1.0 / ((1.0 + fabs(x)) * (1.0 + fabs(x)));
+    return 2.0 * (1.0 + 2.0 * fabs(x)) / ((1.0 + fabs(x)) * (1.0 + fabs(x)));
 }
 
 void Network::train(const vector<int> &x, double y) {
