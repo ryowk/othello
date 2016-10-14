@@ -17,9 +17,6 @@ void Trainer::oneplay(Stone mycolor) {
     initBoard(board);
     int step = 0;
     while (1) {
-        // 学習
-        learner->train(board, step, mycolor, color);
-
         // 石を置けないならパス
         if (!isPuttableBoard(board, color)) {
             color = getOpponentColor(color);
@@ -28,6 +25,8 @@ void Trainer::oneplay(Stone mycolor) {
         }
 
         putStone(board, color, learner->getPos(board, color));
+        // 学習
+        learner->train(board, step, mycolor, color);
 
         // ターンを変更
         color = getOpponentColor(color);
@@ -43,8 +42,11 @@ void Trainer::play() {
     ///////////////////////////////int win1 = 0;
     ///////////////////////////////int win2 = 0;
     for (int irn = 1; irn <= round_number; irn++) {
+        // 黒のプレイヤーのID
         black = irn % 2;
+        // 育てるプレイヤーの色
         Stone mycolor = (black == 0) ? BLACK : WHITE;
+        // 専攻は黒
         color = BLACK;
 
         // 一回プレイしてmycolorの場合を育てる

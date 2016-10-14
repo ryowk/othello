@@ -122,8 +122,8 @@ void TD::train(const std::array<Stone, SIZE2> &board, int step, Stone mycolor,
         return;
     }
 
-    // afterstate なので、自分の番では更新しない
-    if (mycolor == color) return;
+    // afterstate なので置いた直後でないと更新しない
+    if (mycolor != color) return;
 
     // 初手なら更新しない
     if (step == 0 || step == 1) {
