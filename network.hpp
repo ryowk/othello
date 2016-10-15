@@ -18,12 +18,12 @@ class Network {
     std::vector<matrix<double> > w;
     std::vector<vector<double> > b;
 
-    // AdaDelta 用
-    std::vector<matrix<double> > rw_ada;
-    std::vector<vector<double> > rb_ada;
-    std::vector<matrix<double> > sw_ada;
-    std::vector<vector<double> > sb_ada;
-    double rho_ada, epsilon_ada;
+//    // AdaDelta 用
+//    std::vector<matrix<double> > rw_ada;
+//    std::vector<vector<double> > rb_ada;
+//    std::vector<matrix<double> > sw_ada;
+//    std::vector<vector<double> > sb_ada;
+//    double rho_ada, epsilon_ada;
 
     // eligibility trace
     std::vector<matrix<double> > ew;
