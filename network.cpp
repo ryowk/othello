@@ -208,12 +208,16 @@ void Network::train(const vector<int> &x, double y) {
     //////    }
 
     for (int loop = 0; loop < 100; loop++) {
+        double temp_old = fabs(y - getValue(x));
         // ナイーブな方法
         for (int i = 1; i < L; i++) {
             w[i] += alpha * (delta * ew[i] - lambda_2 * w[i]);
             b[i] += alpha * (delta * eb[i]);
         }
-        if (fabs(y - getValue(x)) < 1.0) break;
+        double temp = fabs(y - getValue(x));
+        std::cout << temp << std::endl;
+        if(temp > temp_old) break;
+        temp_old = temp;
     }
 }
 
