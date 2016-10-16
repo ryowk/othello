@@ -70,7 +70,7 @@ inline double Network::dact_func_hidden(double x) const {
 // activation function for the output unit
 inline double Network::act_func_output(double x) const { return tanh(x); }
 inline double Network::dact_func_output(double x) const {
-//    return 1.0 / (1.0 + x * x);
+    //    return 1.0 / (1.0 + x * x);
     return 1.0;
 }
 
@@ -180,7 +180,7 @@ void Network::train(const vector<int> &x, double y) {
     //////        for (size_t j = 0; j < w[i].size1(); j++) {
     //////            for (size_t k = 0; k < w[i].size2(); k++) {
     //////                double grad = -(delta * ew[i](j, k) - lambda_2 *
-    ///w[i](j, k));
+    /// w[i](j, k));
     //////                rw_ada[i](j, k) =
     //////                    rho_ada * rw_ada[i](j, k) + (1.0 - rho_ada) * grad
     ///* grad;
@@ -188,7 +188,7 @@ void Network::train(const vector<int> &x, double y) {
     //////                           sqrt(rw_ada[i](j, k) + epsilon_ada) * grad;
     //////                sw_ada[i](j, k) =
     //////                    rho_ada * sw_ada[i](j, k) + (1.0 - rho_ada) * v *
-    ///v;
+    /// v;
     //////                w[i](j, k) += alpha * v;
     //////          }
     //////      }
@@ -198,25 +198,24 @@ void Network::train(const vector<int> &x, double y) {
     //////          double grad = -(delta * eb[i](j));
     //////            rb_ada[i](j) =
     //////                rho_ada * rb_ada[i](j) + (1.0 - rho_ada) * grad *
-    ///grad;
+    /// grad;
     //////            double v = -sqrt(sb_ada[i](j) + epsilon_ada) /
     //////                       sqrt(rb_ada[i](j) + epsilon_ada) * grad;
     //////            sb_ada[i](j) = rho_ada * sb_ada[i](j) + (1.0 - rho_ada) *
-    ///v * v;
+    /// v * v;
     //////            b[i](j) += alpha * v;
     //////        }
     //////    }
 
-    for (int loop = 0; loop < 100; loop++) {
-        double temp_old = fabs(y - getValue(x));
+    double temp_old = fabs(y + 0.1 * (est - y) - getValue(x));
+    for (int loop = 0; loop < 1000; loop++) {
         // ナイーブな方法
         for (int i = 1; i < L; i++) {
             w[i] += alpha * (delta * ew[i] - lambda_2 * w[i]);
             b[i] += alpha * (delta * eb[i]);
         }
-        double temp = fabs(y - getValue(x));
-        std::cout << temp << std::endl;
-        if(temp > temp_old) break;
+        double temp = fabs(y + 0.1 * (est - y) - getValue(x));
+        if (temp < 0.01 || temp > temp_old) break;
         temp_old = temp;
     }
 }
