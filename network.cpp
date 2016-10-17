@@ -118,6 +118,8 @@ void Network::train(const vector<int> &x, double y) {
     z[L - 1](0) = act_func_output(u[L - 1](0));
     double est = z[L - 1](0);
 
+    // V <- V + 0.1 * (V' - V)
+    y = est + 0.1 * (y - est);
     double delta = y - est;
 
     // backward calculation
@@ -207,14 +209,14 @@ void Network::train(const vector<int> &x, double y) {
     //////        }
     //////    }
 
-    double temp_old = fabs(y + 0.1 * (est - y) - getValue(x));
+    double temp_old = fabs(y - getValue(x));
     for (int loop = 0; loop < 1000; loop++) {
         // ナイーブな方法
         for (int i = 1; i < L; i++) {
             w[i] += alpha * (delta * ew[i] - lambda_2 * w[i]);
             b[i] += alpha * (delta * eb[i]);
         }
-        double temp = fabs(y + 0.1 * (est - y) - getValue(x));
+        double temp = fabs(y - getValue(x));
         if (temp < 0.01 || temp > temp_old) break;
         temp_old = temp;
     }
