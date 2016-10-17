@@ -118,8 +118,8 @@ void Network::train(const vector<int> &x, double y) {
     z[L - 1](0) = act_func_output(u[L - 1](0));
     double est = z[L - 1](0);
 
-    // V <- V + 0.1 * (V' - V)
-    y = est + 0.1 * (y - est);
+    // V <- V + 0.2 * (V' - V)
+    y = est + 0.2 * (y - est);
     double delta = y - est;
 
     // backward calculation
