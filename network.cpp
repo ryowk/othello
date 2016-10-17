@@ -118,8 +118,10 @@ void Network::train(const vector<int> &x, double y) {
     z[L - 1](0) = act_func_output(u[L - 1](0));
     double est = z[L - 1](0);
 
-    // V <- V + 0.2 * (V' - V)
-    y = est + 0.2 * (y - est);
+    // V <- V + alpha * (V' - V)
+    // 学習率はTDで出てくるものに押し付けて
+    // ニューラルネットの学習率は1としている
+    y = est + alpha * (y - est);
     double delta = y - est;
 
     // backward calculation
@@ -213,11 +215,12 @@ void Network::train(const vector<int> &x, double y) {
     for (int loop = 0; loop < 1000; loop++) {
         // ナイーブな方法
         for (int i = 1; i < L; i++) {
-            w[i] += alpha * (delta * ew[i] - lambda_2 * w[i]);
-            b[i] += alpha * (delta * eb[i]);
+            w[i] += 0.001 * (delta * ew[i] - lambda_2 * w[i]);
+            b[i] += 0.001 * (delta * eb[i]);
         }
         double temp = fabs(y - getValue(x));
-        if (temp < 0.01 || temp > temp_old) break;
+        std::cout << temp << std::endl;
+        if (temp < 0.001 || temp > temp_old) break;
         temp_old = temp;
     }
 }
