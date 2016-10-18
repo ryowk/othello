@@ -19,22 +19,11 @@ Network::Network(const std::vector<int> &n, double lam, double alp, double lam2,
     b.resize(L);
     ew.resize(L);
     eb.resize(L);
-    //    // AdaDelta 用の変数たち
-    //    rw_ada.resize(L);
-    //    rb_ada.resize(L);
-    //    sw_ada.resize(L);
-    //    sb_ada.resize(L);
-    //    rho_ada = 0.95;
-    //    epsilon_ada = 1e-8;
     for (int i = 1; i < L; i++) {
         w[i].resize(N[i], N[i - 1]);
         b[i].resize(N[i]);
         ew[i].resize(N[i], N[i - 1]);
         eb[i].resize(N[i]);
-        //        rw_ada[i].resize(N[i], N[i - 1]);
-        //        rb_ada[i].resize(N[i]);
-        //        sw_ada[i].resize(N[i], N[i - 1]);
-        //        sb_ada[i].resize(N[i]);
     }
 }
 
@@ -45,20 +34,6 @@ void Network::unset_et() {
     }
 }
 
-//// ReLU
-// inline double Network::ReLU(double x) const { return x * (x > 0.0); }
-// inline double Network::dReLU(double x) const { return 1.0 * (x > 0.0); }
-//// sigmoid
-// inline double Network::sigmoid(double x) const { return 1.0 / (1.0 +
-// exp(-x)); }
-// inline double Network::dsigmoid(double x) const {
-//    return (1.0 - sigmoid(x)) * sigmoid(x);
-//}
-//// tanh
-// inline double Network::tanh(double x) const { return std::tanh(x); }
-// inline double Network::dtanh(double x) const { return 1.0 - tanh(x) *
-// tanh(x); }
-
 // activation functoin for the hidden units
 inline double Network::act_func_hidden(double x) const { return tanh(x); }
 inline double Network::dact_func_hidden(double x) const {
@@ -66,13 +41,10 @@ inline double Network::dact_func_hidden(double x) const {
 }
 
 // x が大きくなると導関数が 0 になると、更新されなくなってしまうので注意
-// return は [-1:1] の中にあるが、勾配が消えないように 2 倍している
+// ユニットが一つだけなので活性化関数の微分を自由に変えることで防いでいる
 // activation function for the output unit
 inline double Network::act_func_output(double x) const { return tanh(x); }
-inline double Network::dact_func_output(double x) const {
-    //    return 1.0 / (1.0 + x * x);
-    return 1.0;
-}
+inline double Network::dact_func_output(double x) const { return 1.0; }
 
 void Network::train(const vector<int> &x, double y) {
     // Dropout mask
@@ -118,10 +90,6 @@ void Network::train(const vector<int> &x, double y) {
     z[L - 1](0) = act_func_output(u[L - 1](0));
     double est = z[L - 1](0);
 
-    // V <- V + alpha * (V' - V)
-    // 学習率はTDで出てくるものに押し付けて
-    // ニューラルネットの学習率は1としている
-    y = est + alpha * (y - est);
     double delta = y - est;
 
     // backward calculation
@@ -178,50 +146,10 @@ void Network::train(const vector<int> &x, double y) {
     }
 #endif
 
-    //////    // AdaDelta
-    //////    // この書き方は遅いかもしれない
-    //////    for (int i = 1; i < L; i++) {
-    //////        for (size_t j = 0; j < w[i].size1(); j++) {
-    //////            for (size_t k = 0; k < w[i].size2(); k++) {
-    //////                double grad = -(delta * ew[i](j, k) - lambda_2 *
-    /// w[i](j, k));
-    //////                rw_ada[i](j, k) =
-    //////                    rho_ada * rw_ada[i](j, k) + (1.0 - rho_ada) * grad
-    ///* grad;
-    //////                double v = -sqrt(sw_ada[i](j, k) + epsilon_ada) /
-    //////                           sqrt(rw_ada[i](j, k) + epsilon_ada) * grad;
-    //////                sw_ada[i](j, k) =
-    //////                    rho_ada * sw_ada[i](j, k) + (1.0 - rho_ada) * v *
-    /// v;
-    //////                w[i](j, k) += alpha * v;
-    //////          }
-    //////      }
-    //////
-    //////      // バイアス項は正則化しない
-    //////      for (size_t j = 0; j < b[i].size(); j++) {
-    //////          double grad = -(delta * eb[i](j));
-    //////            rb_ada[i](j) =
-    //////                rho_ada * rb_ada[i](j) + (1.0 - rho_ada) * grad *
-    /// grad;
-    //////            double v = -sqrt(sb_ada[i](j) + epsilon_ada) /
-    //////                       sqrt(rb_ada[i](j) + epsilon_ada) * grad;
-    //////            sb_ada[i](j) = rho_ada * sb_ada[i](j) + (1.0 - rho_ada) *
-    /// v * v;
-    //////            b[i](j) += alpha * v;
-    //////        }
-    //////    }
-
-    double temp_old = fabs(y - getValue(x));
-    for (int loop = 0; loop < 1000; loop++) {
-        // ナイーブな方法
-        for (int i = 1; i < L; i++) {
-            w[i] += 0.001 * (delta * ew[i] - lambda_2 * w[i]);
-            b[i] += 0.001 * (delta * eb[i]);
-        }
-        double temp = fabs(y - getValue(x));
-        std::cout << temp << std::endl;
-        if (temp < 0.001 || temp > temp_old) break;
-        temp_old = temp;
+    // ナイーブな方法
+    for (int i = 1; i < L; i++) {
+        w[i] += alpha * (delta * ew[i] - lambda_2 * w[i]);
+        b[i] += alpha * (delta * eb[i]);
     }
 }
 
