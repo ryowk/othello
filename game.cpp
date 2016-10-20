@@ -135,6 +135,6 @@ void Game::setPlayer(Player *p, int id){
         std::cout << "ERROR: Invalid id in setPlayer" << std::endl;
         std::exit(0);
     }
-    if(player[id] != nullptr) delete player[id];
+    if(player[id] != nullptr && player[id] != p) delete player[id];
     player[id] = p;
 }
