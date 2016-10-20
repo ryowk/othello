@@ -20,3 +20,6 @@ target_link_libraries(check.out functions players)
 
 add_executable(apgame.out apgame.cpp)
 target_link_libraries(apgame.out functions players)
+
+
+#add_executable(training.out trainer.cpp training.cpp functions.cpp player.cpp learner.cpp man.cpp aho.cpp alphabeta.cpp primitivemc.cpp mcts.cpp td.cpp network.cpp game.cpp)
