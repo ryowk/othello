@@ -69,6 +69,8 @@ void Trainer::play() {
 
         if (irn % 1000 == 0) {
             learner->write();
+        }
+        if (irn % 5000 == 0){
             static Game *game = new Game(File);
             learner->setIsBattle(true);
             game->setPlayer(learner, 0);
