@@ -7,7 +7,7 @@
 
 #include "game.hpp"
 
-Trainer::Trainer(int rn, std::string &dirn) : round_number(rn), dirname(dirn) {
+Trainer::Trainer(std::string &dirn, int wi, int bi) :dirname(dirn), write_interval(wi), battle_interval(bi) {
     learner = new TD(dirname, false);
 }
 
@@ -41,7 +41,7 @@ void Trainer::play() {
 
     ///////////////////////////////int win1 = 0;
     ///////////////////////////////int win2 = 0;
-    for (int irn = 1; irn <= round_number; irn++) {
+    for (int irn = 1;; irn++) {
         // 黒のプレイヤーのID
         black = irn % 2;
         // 育てるプレイヤーの色
@@ -67,10 +67,10 @@ void Trainer::play() {
 
         ////////////////////std::cout << irn << "/" << round_number << std::endl;
 
-        if (irn % 1000 == 0) {
+        if (irn % write_interval == 0) {
             learner->write();
         }
-        if (irn % 5000 == 0){
+        if (irn % battle_interval == 0){
             static Game *game = new Game(File);
             learner->setIsBattle(true);
             game->setPlayer(learner, 0);

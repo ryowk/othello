@@ -7,14 +7,15 @@
 int main(int argc, char *argv[]) {
     clock_t ct1 = clock();
 
-    if (argc != 3){
-        std::cout << "Input round_number & dirname.\n";
+    if (argc != 4){
+        std::cout << "dirname, write_interval, and battle_interval.\n";
         return 0;
     }
-    int round_number = atoi(argv[1]);
-    std::string dirname = std::string(argv[2]);
+    std::string dirname = std::string(argv[1]);
+    int write_interval = atoi(argv[2]);
+    int battle_interval = atoi(argv[3]);
 
-    Trainer *trainer = new Trainer(round_number, dirname);
+    Trainer *trainer = new Trainer(dirname, write_interval, battle_interval);
     trainer->play();
     delete trainer;
 
