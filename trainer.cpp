@@ -37,7 +37,7 @@ void Trainer::oneplay(Stone mycolor) {
 void Trainer::play() {
     std::ifstream File("battle_menu", std::ios::in);
     dirname = dirname + "rate";
-    std::ofstream Log(dirname);
+    std::ofstream Log(dirname, std::ios::app);
 
     ///////////////////////////////int win1 = 0;
     ///////////////////////////////int win2 = 0;
@@ -76,7 +76,7 @@ void Trainer::play() {
             game->setPlayer(learner, 0);
             double ratio;
             game->play(ratio);
-            Log << irn << " " << ratio << std::endl;
+            Log << learner->getTrainingCount() << " " << ratio << std::endl;
             learner->setIsBattle(false);
         }
     }

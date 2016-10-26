@@ -7,7 +7,7 @@
 #include "functions.hpp"
 
 TD::TD(std::string dn, bool isB)
-    : Learner(isB), dirname(dn), training_count(0) {
+    : Learner(isB), dirname(dn) {
     read();
 }
 
@@ -52,9 +52,11 @@ void TD::read() {
     std::ifstream file_data(fname_data, std::ios::in);
     if (!file_data.fail()) {
         network->read(file_data);
+        file_data >> training_count;
     } else {
         std::cout << fname_data << " is created." << std::endl;
         network->init();
+        training_count = 0;
     }
 }
 
@@ -63,7 +65,7 @@ void TD::write() const {
     std::string fname_data = dirname + "coeff";
     std::ofstream File(fname_data, std::ios::out);
     network->write(File);
-    File << "Training Count: " << training_count << std::endl;
+    File << training_count << std::endl;
 }
 
 bool TD::isMan() const { return false; }

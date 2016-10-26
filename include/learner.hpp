@@ -6,6 +6,7 @@
 class Learner : public Player {
 protected:
     bool isBattle;
+    int training_count;
 public:
     Learner(bool isB);
     virtual ~Learner();
@@ -13,4 +14,5 @@ public:
     virtual void read() = 0;
     virtual void write() const = 0;
     void setIsBattle(bool isB);
+    int getTrainingCount();
 };

@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 2.6)
 project(othello CXX)
 set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -O3")
 
-include_directories("./include")
+include_directories(/usr/local/include)
+include_directories(./include)
 
 add_library(functions STATIC functions.cpp)
 add_library(players STATIC player.cpp learner.cpp man.cpp aho.cpp alphabeta.cpp primitivemc.cpp mcts.cpp td.cpp network.cpp)

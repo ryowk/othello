@@ -12,7 +12,6 @@ using namespace boost::numeric;
 class TD : public Learner {
     std::string dirname;
     double epsilon;
-    int training_count;
 
     std::array<Stone, SIZE2> board_old;
     Network *network;
